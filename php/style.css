@@ -1,189 +1,275 @@
-/* style.css - Payroll UI Styling (Student D) */
+/* style.css - Professional Multi-Page Dashboard Overhaul */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --secondary: #64748b;
+    --success: #059669;
+    --bg-main: #f8fafc;
+    --bg-sidebar: #1e293b;
+    --sidebar-text: #f1f5f9;
+    --sidebar-hover: #334155;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+* { box-sizing: border-box; }
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f4f7f6;
+    font-family: 'Inter', -apple-system, sans-serif;
     margin: 0;
-    padding: 20px;
-    color: #333;
+    background-color: var(--bg-main);
+    color: var(--text-main);
 }
 
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
+.paged-layout {
+    display: flex;
+    min-height: 100vh;
 }
 
-h1 {
+/* Sidebar Navigation */
+.main-sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    padding: 30px 20px;
     text-align: center;
-    color: #2c3e50;
+    border-bottom: 1px solid #334155;
+}
+
+.sidebar-brand h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    padding: 15px 25px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    gap: 15px;
+}
+
+.sidebar-nav a:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.sidebar-nav a.active {
+    background-color: var(--primary);
+    color: white;
+}
+
+.sidebar-footer {
+    padding: 20px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+    border-top: 1px solid #334155;
+}
+
+/* Content Area */
+.content-area {
+    flex: 1;
+    margin-left: 260px;
+    padding: 40px;
+    max-width: 1400px;
+}
+
+.content-header {
     margin-bottom: 30px;
 }
 
-.modular-sections {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: space-between;
+.content-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
 }
 
+.content-header p {
+    margin: 5px 0 0;
+    color: var(--text-muted);
+}
+
+/* UI Components */
 .card {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    flex: 1 1 calc(33.333% - 20px);
-    min-width: 300px;
+    background: var(--white);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+}
+
+.split-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.full-width { grid-column: 1 / -1; }
+
+/* Forms */
+.form-group {
     margin-bottom: 20px;
 }
 
-.card h2 {
-    margin-top: 0;
-    color: #34495e;
-    font-size: 1.2rem;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-main);
 }
 
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
 }
 
-input, select, button {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-button {
-    background-color: #3498db;
+.btn-primary {
+    background-color: var(--primary);
     color: white;
     border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-weight: 600;
     cursor: pointer;
-    font-weight: bold;
-    transition: background 0.3s;
+    width: 100%;
+    transition: background 0.2s;
 }
 
-button:hover {
-    background-color: #2980b9;
+.btn-primary:hover {
+    background-color: var(--primary-dark);
 }
 
-.btn-edit {
-    display: inline-block;
-    padding: 5px 10px;
-    background-color: #f39c12;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    font-size: 0.8rem;
-}
-
-.btn-edit:hover {
-    background-color: #e67e22;
-}
-
-.btn-cancel {
-    display: inline-block;
-    padding: 10px;
-    background-color: #95a5a6;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.btn-cancel:hover {
-    background-color: #7f8c8d;
-}
-
-.calculation-preview {
-    background: #ecf0f1;
-    padding: 10px;
-    border-radius: 4px;
-    border-left: 4px solid #3498db;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-}
-
-.net-income {
-    font-weight: bold;
-    color: #27ae60;
-}
-
-.filter-form {
-    flex-direction: row;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 4px;
-}
-
-.filter-form label {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: white;
-}
-
-.badge.pending {
-    background-color: #f1c40f;
-}
-
-.badge.processed {
-    background-color: #2ecc71;
-}
-
-#shift-report {
-    flex: 1 1 100%;
-}
-
-.alert {
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    text-align: center;
-}
-
-.alert.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+/* Tables */
+.table-container {
+    overflow-x: auto;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
-}
-
-table th, table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
 }
 
 table th {
-    background-color: #f8f9fa;
-    color: #2c3e50;
+    text-align: left;
+    padding: 15px;
+    background-color: #f1f5f9;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
 }
 
-#employee-list {
-    flex: 1 1 100%;
+table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9375rem;
 }
 
-@media (max-width: 768px) {
-    .card {
-        flex: 1 1 100%;
-    }
+.net-income {
+    font-weight: 700;
+    color: var(--success);
+}
+
+/* Timesheet Specifics */
+.timesheet-controls {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr;
+    gap: 20px;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ts-summary-box {
+    text-align: center;
+    background: #f1f5f9;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.ts-summary-box p { margin: 0; font-size: 0.75rem; color: var(--text-muted); }
+.ts-summary-box h2 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+
+.timesheet-grid-container {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.timesheet-grid {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr 80px;
+    gap: 10px;
+}
+
+.grid-header {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.day-row { display: contents; }
+.day-num { align-self: center; text-align: center; font-weight: 600; color: var(--text-muted); }
+
+.ts-input {
+    text-align: center;
+    padding: 8px !important;
+}
+
+.day-off-active .ts-input {
+    background-color: #f1f5f9;
+    color: #cbd5e1;
+    pointer-events: none;
+}
+
+.toggle-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+.alert.success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+@media (max-width: 1024px) {
+    .split-view { grid-template-columns: 1fr; }
+    .main-sidebar { width: 80px; }
+    .sidebar-brand h2, .sidebar-nav a span:not(.icon), .sidebar-footer { display: none; }
+    .content-area { margin-left: 80px; }
 }

@@ -1,59 +1,87 @@
-/* script.js - Frontend Validations (Student D) */
+/* script.js - Overhauled Payroll Logic (Phase 1-4) */
 document.addEventListener('DOMContentLoaded', function() {
-    const hourlyInput = document.getElementById('hourly_rate');
-    const taxInput = document.getElementById('tax_rate');
-    const previewSpan = document.getElementById('net_hourly_preview');
+    const positionSelect = document.getElementById('position-select');
+    const customTaxContainer = document.getElementById('custom-tax-container');
+    const taxRateHidden = document.getElementById('tax_rate_hidden');
+    const customTaxInput = document.querySelector('input[name="custom_tax_rate"]');
 
-    function updatePreview() {
-        const hourly = parseFloat(hourlyInput.value) || 0;
-        const tax = parseFloat(taxInput.value) || 0;
-        const net = hourly - (hourly * (tax / 100));
-        previewSpan.textContent = '$' + net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    // Phase 1: Position-based Tax Logic
+    if (positionSelect) {
+        positionSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const taxValue = selectedOption.getAttribute('data-tax');
+
+            if (this.value === 'Custom') {
+                customTaxContainer.style.display = 'block';
+                customTaxInput.setAttribute('required', 'required');
+                taxRateHidden.value = ''; // Will be handled by custom input
+            } else {
+                customTaxContainer.style.display = 'none';
+                customTaxInput.removeAttribute('required');
+                taxRateHidden.value = taxValue;
+            }
+        });
     }
 
-    if (hourlyInput && taxInput) {
-        hourlyInput.addEventListener('input', updatePreview);
-        taxInput.addEventListener('input', updatePreview);
-        updatePreview(); // Initial calculation
+    // Phase 2: 30-Day Timesheet Logic
+    const timesheetForm = document.getElementById('timesheet-form');
+    const totalDisplay = document.getElementById('ts-total');
+
+    function calculateTotalHours() {
+        let total = 0;
+        const rows = document.querySelectorAll('.day-row');
+        rows.forEach(row => {
+            const isOff = row.querySelector('.day-off-check').checked;
+            if (!isOff) {
+                const reg = parseFloat(row.querySelector('input[name^="reg_"]').value) || 0;
+                const ot = parseFloat(row.querySelector('input[name^="ot_"]').value) || 0;
+                total += (reg + ot);
+            }
+        });
+        totalDisplay.textContent = total.toFixed(1);
     }
 
+    if (timesheetForm) {
+        timesheetForm.addEventListener('input', calculateTotalHours);
+        
+        // Day Off Toggle Logic
+        document.querySelectorAll('.day-off-check').forEach(check => {
+            check.addEventListener('change', function() {
+                const day = this.getAttribute('data-day');
+                const row = document.getElementById('row-' + day);
+                if (this.checked) {
+                    row.classList.add('day-off-active');
+                    row.querySelectorAll('.ts-input').forEach(input => input.value = 0);
+                } else {
+                    row.classList.remove('day-off-active');
+                    row.querySelector('input[name^="reg_"]').value = 8;
+                }
+                calculateTotalHours();
+            });
+        });
+        
+        calculateTotalHours(); // Initial calculation
+    }
+
+    // Phase 2-4: General Form Validations
     const forms = document.querySelectorAll('form');
-    
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
             let isValid = true;
-            const inputs = form.querySelectorAll('input[required], select[required]');
+            const numericInputs = form.querySelectorAll('input[type="number"]');
             
-            inputs.forEach(input => {
-                if (!input.value.trim()) {
+            numericInputs.forEach(input => {
+                if (parseFloat(input.value) < 0) {
                     isValid = false;
+                    alert(`${input.placeholder || 'Value'} cannot be negative.`);
                     input.style.borderColor = 'red';
                 } else {
                     input.style.borderColor = '#ddd';
                 }
-
-                // Numeric validations
-                if (input.type === 'number' && parseFloat(input.value) < 0) {
-                    isValid = false;
-                    alert(`${input.placeholder || 'Field'} cannot be negative.`);
-                    input.style.borderColor = 'red';
-                }
             });
-
-            // Special validation for clock in/out
-            const clockIn = form.querySelector('input[name="clock_in"]');
-            const clockOut = form.querySelector('input[name="clock_out"]');
-            if (clockIn && clockOut && clockIn.value && clockOut.value) {
-                if (new Date(clockIn.value) >= new Date(clockOut.value)) {
-                    isValid = false;
-                    alert('Clock-out time must be after clock-in time.');
-                    clockOut.style.borderColor = 'red';
-                }
-            }
 
             if (!isValid) {
                 e.preventDefault();
-                console.warn('Form validation failed.');
             }
         });
     });

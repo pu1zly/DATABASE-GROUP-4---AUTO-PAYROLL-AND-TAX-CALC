@@ -1,7 +1,7 @@
 # Step-by-Step Setup Guide
 
 Follow these steps to "piece together" the automated payroll and tax calculator system using XAMPP and Python.
-(**download kayo ng XAMPP love you**)
+
 ---
 
 ### **Step 1: Start XAMPP Services**
@@ -40,13 +40,10 @@ Follow these steps to "piece together" the automated payroll and tax calculator 
     ```bash
     pip install mysql-connector-python
     ```
-4.  Place `payroll_engine.py` in a folder of your choice. <- kung saan nyo linagay, yun yung folder location
+4.  Place `payroll_engine.py` in a folder of your choice.
 5.  To test the connection, run the script:
     ```bash
-
-    **IMPORTANT**
-    'pag irurun nyo sa terminal gawin nyo muna is palitan yung directory like: cd C:\Users\Floyd\Downloads\test\payroll_system_v4. kumbaga yung location ng payroll_system_v4. then run: python payroll_engine.py'
-    
+    python payroll_engine.py
     ```
     *   *It should print "Successfully connected to payroll database."*
 
