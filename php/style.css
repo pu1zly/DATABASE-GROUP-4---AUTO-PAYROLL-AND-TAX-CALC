@@ -1,275 +1,379 @@
-/* style.css - Professional Multi-Page Dashboard Overhaul */
+/* style.css — Payroll Dashboard Overhaul */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1e40af;
-    --secondary: #64748b;
-    --success: #059669;
-    --bg-main: #f8fafc;
-    --bg-sidebar: #1e293b;
-    --sidebar-text: #f1f5f9;
-    --sidebar-hover: #334155;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --white: #ffffff;
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --primary:       #3b6ef8;
+    --primary-dark:  #2451d4;
+    --primary-soft:  #eff4ff;
+    --success:       #10b77f;
+    --success-soft:  #e9faf4;
+    --warning:       #f59e0b;
+    --danger:        #ef4444;
+
+    --bg:            #f4f6fb;
+    --surface:       #ffffff;
+    --surface-2:     #f8fafc;
+
+    --sidebar-bg:    #0f172a;
+    --sidebar-hover: rgba(255,255,255,.07);
+    --sidebar-active:#3b6ef8;
+    --sidebar-text:  #94a3b8;
+    --sidebar-hi:    #f1f5f9;
+
+    --text:          #0f172a;
+    --text-muted:    #64748b;
+    --border:        #e4e9f2;
+    --shadow-sm:     0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+    --shadow-md:     0 4px 16px rgba(15,23,42,.09);
+    --radius:        12px;
+    --sidebar-w:     240px;
+
+    font-size: 15px;
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: 'Inter', -apple-system, sans-serif;
-    margin: 0;
-    background-color: var(--bg-main);
-    color: var(--text-main);
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
 }
 
+/* ─── LAYOUT ─────────────────────────────────────────── */
 .paged-layout {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar Navigation */
+.content-area {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    padding: 36px 40px;
+    max-width: 1440px;
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────── */
 .main-sidebar {
-    width: 260px;
-    background-color: var(--bg-sidebar);
-    color: var(--sidebar-text);
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
     display: flex;
     flex-direction: column;
     position: fixed;
+    top: 0; left: 0;
     height: 100vh;
-    z-index: 100;
+    z-index: 200;
+    border-right: 1px solid rgba(255,255,255,.04);
 }
 
 .sidebar-brand {
-    padding: 30px 20px;
-    text-align: center;
-    border-bottom: 1px solid #334155;
+    padding: 28px 20px 22px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.sidebar-brand .brand-label {
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 4px;
 }
 
 .sidebar-brand h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    letter-spacing: 1px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--sidebar-hi);
+    letter-spacing: -.3px;
 }
 
 .sidebar-nav {
     flex: 1;
-    padding: 20px 0;
+    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nav-section-label {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #334155;
+    padding: 12px 12px 4px;
 }
 
 .sidebar-nav a {
     display: flex;
     align-items: center;
-    padding: 15px 25px;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 8px;
     color: var(--sidebar-text);
     text-decoration: none;
-    transition: all 0.2s;
+    font-size: .875rem;
     font-weight: 500;
-    gap: 15px;
+    transition: background .15s, color .15s;
+    position: relative;
 }
 
 .sidebar-nav a:hover {
-    background-color: var(--sidebar-hover);
+    background: var(--sidebar-hover);
+    color: var(--sidebar-hi);
 }
 
 .sidebar-nav a.active {
-    background-color: var(--primary);
-    color: white;
+    background: rgba(59,110,248,.18);
+    color: #93b4ff;
+}
+
+.sidebar-nav a.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 25%; height: 50%;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 0 4px 4px 0;
+}
+
+.nav-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
 .sidebar-footer {
-    padding: 20px;
-    font-size: 0.75rem;
-    color: #94a3b8;
-    text-align: center;
-    border-top: 1px solid #334155;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,.06);
 }
 
-/* Content Area */
-.content-area {
-    flex: 1;
-    margin-left: 260px;
-    padding: 40px;
-    max-width: 1400px;
+.sidebar-footer p {
+    font-size: .7rem;
+    color: #334155;
+    font-weight: 500;
+    letter-spacing: .04em;
 }
 
+/* ─── PAGE HEADER ─────────────────────────────────────── */
 .content-header {
-    margin-bottom: 30px;
+    margin-bottom: 28px;
 }
 
 .content-header h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 800;
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -.4px;
+    color: var(--text);
 }
 
 .content-header p {
-    margin: 5px 0 0;
+    margin-top: 4px;
     color: var(--text-muted);
+    font-size: .9rem;
 }
 
-/* UI Components */
+/* ─── CARDS ───────────────────────────────────────────── */
 .card {
-    background: var(--white);
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: var(--shadow);
-    margin-bottom: 30px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+
+.card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
 }
 
 .split-view {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: 24px;
 }
 
-.full-width { grid-column: 1 / -1; }
-
-/* Forms */
+/* ─── FORMS ───────────────────────────────────────────── */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.875rem;
+    font-size: .8rem;
     font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--text-main);
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
 }
 
-input, select {
+input[type="text"],
+input[type="number"],
+input[type="month"],
+select {
     width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-size: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+    appearance: none;
+}
+
+input:focus, select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59,110,248,.12);
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
 }
 
 .btn-primary {
-    background-color: var(--primary);
-    color: white;
+    background: var(--primary);
+    color: #fff;
     border: none;
-    padding: 14px 24px;
+    padding: 11px 20px;
     border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
-    transition: background 0.2s;
+    transition: background .18s, transform .1s;
+    letter-spacing: .01em;
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-dark);
+.btn-primary:hover  { background: var(--primary-dark); }
+.btn-primary:active { transform: scale(.98); }
+
+/* ─── ALERTS ──────────────────────────────────────────── */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    border-radius: 9px;
+    margin-bottom: 22px;
+    font-size: .875rem;
+    font-weight: 500;
 }
 
-/* Tables */
-.table-container {
-    overflow-x: auto;
+.alert.success {
+    background: var(--success-soft);
+    color: #065f46;
+    border: 1px solid #a7f3d0;
 }
+
+.alert.success::before { content: '✓'; font-weight: 800; }
+
+/* ─── TABLES ──────────────────────────────────────────── */
+.table-container { overflow-x: auto; }
 
 table {
     width: 100%;
     border-collapse: collapse;
 }
 
+table thead tr {
+    border-bottom: 1.5px solid var(--border);
+}
+
 table th {
     text-align: left;
-    padding: 15px;
-    background-color: #f1f5f9;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    padding: 11px 14px;
+    font-size: .7rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Excel table overrides */
+.excel-table th {
+    color: #f1f5f9;
+    background: #1e293b;
 }
 
 table td {
-    padding: 15px;
+    padding: 13px 14px;
     border-bottom: 1px solid var(--border);
-    font-size: 0.9375rem;
+    font-size: .875rem;
+    color: var(--text);
+    vertical-align: middle;
 }
+
+/* Excel table overrides — reset global table styles */
+.excel-table td {
+    padding: 0;
+    border-bottom: none;
+}
+
+table tbody tr:last-child td { border-bottom: none; }
+
+table tbody tr:hover td {
+    background: var(--surface-2);
+}
+
+table td strong { font-weight: 600; }
+table td small  { color: var(--text-muted); font-size: .78rem; }
 
 .net-income {
-    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
     color: var(--success);
+    font-size: .875rem;
 }
 
-/* Timesheet Specifics */
-.timesheet-controls {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.5fr;
-    gap: 20px;
-    align-items: flex-end;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
+.mono {
+    font-family: 'DM Mono', monospace;
+    font-size: .875rem;
 }
 
-.ts-summary-box {
-    text-align: center;
-    background: #f1f5f9;
-    padding: 10px;
-    border-radius: 8px;
+.badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 99px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
-.ts-summary-box p { margin: 0; font-size: 0.75rem; color: var(--text-muted); }
-.ts-summary-box h2 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+/* ─── TIMESHEET — old grid rules removed, see phase2.php ── */
 
-.timesheet-grid-container {
-    max-height: 500px;
-    overflow-y: auto;
-    padding-right: 10px;
-}
-
-.timesheet-grid {
-    display: grid;
-    grid-template-columns: 50px 1fr 1fr 80px;
-    gap: 10px;
-}
-
-.grid-header {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    text-align: center;
-}
-
-.day-row { display: contents; }
-.day-num { align-self: center; text-align: center; font-weight: 600; color: var(--text-muted); }
-
-.ts-input {
-    text-align: center;
-    padding: 8px !important;
-}
-
-.day-off-active .ts-input {
-    background-color: #f1f5f9;
-    color: #cbd5e1;
-    pointer-events: none;
-}
-
-.toggle-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.alert {
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 25px;
-    font-weight: 500;
-}
-
-.alert.success {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-}
-
-@media (max-width: 1024px) {
+/* ─── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 1100px) {
     .split-view { grid-template-columns: 1fr; }
-    .main-sidebar { width: 80px; }
-    .sidebar-brand h2, .sidebar-nav a span:not(.icon), .sidebar-footer { display: none; }
-    .content-area { margin-left: 80px; }
+    .timesheet-controls { grid-template-columns: 1fr 1fr; }
+    .ts-summary-box, .btn-primary { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+    :root { --sidebar-w: 66px; }
+    .content-area { padding: 24px 18px; }
+    .sidebar-brand h2,
+    .sidebar-nav a span:not(.nav-icon),
+    .nav-section-label,
+    .sidebar-footer p { display: none; }
+    .sidebar-brand { padding: 20px 10px; text-align: center; }
+    .sidebar-nav a { justify-content: center; padding: 12px 0; }
+    .sidebar-nav a.active::before { display: none; }
 }
