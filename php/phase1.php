@@ -14,7 +14,6 @@ $editing_employee = null;
 $edit_id = null;
 
 // Handle POST actions: deactivate, reactivate, delete, configure, bulk_import
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
@@ -57,20 +56,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
         $tax_rate     = ($position == 'Custom') ? $_POST['custom_tax_rate'] : $_POST['tax_rate'];
 
         if ($edit_id) {
+            // Update existing employee
             if (updateEmployee($pdo, $edit_id, $id_code, $name, $position, $hourly_rate, $tax_rate)) {
                 $message = "Employee <strong>" . htmlspecialchars($name) . "</strong> updated successfully!";
                 $message_type = "success";
                 $edit_id = null;
             } else {
-                $message = "Error updating employee.";
+                // Check if duplicate ID code caused the failure
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ? AND id != ?");
+                $stmt->execute([$id_code, $edit_id]);
+                if ($stmt->fetchColumn() > 0) {
+                    $message = "Update failed: Employee ID Code <strong>" . htmlspecialchars($id_code) . "</strong> is already used by another employee.";
+                } else {
+                    $message = "Error updating employee.";
+                }
                 $message_type = "error";
             }
         } else {
+            // Add new employee
             if (configureEmployee($pdo, $id_code, $name, $position, $hourly_rate, $tax_rate)) {
                 $message = "Employee <strong>" . htmlspecialchars($name) . "</strong> added successfully!";
                 $message_type = "success";
             } else {
-                $message = "Error adding employee.";
+                // Check if duplicate ID code
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ?");
+                $stmt->execute([$id_code]);
+                if ($stmt->fetchColumn() > 0) {
+                    $message = "Error: Employee ID Code <strong>" . htmlspecialchars($id_code) . "</strong> already exists.";
+                } else {
+                    $message = "Error adding employee.";
+                }
                 $message_type = "error";
             }
         }
@@ -104,11 +119,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
 $employees = getAllEmployeesIncludingInactive($pdo);
 $active_employees = getEmployees($pdo);
-
-// Extract inactive employees
-$inactive_employees = array_filter($employees, function($emp) { 
-    return $emp['is_active'] == 0; 
-});
+$inactive_employees = array_filter($employees, function($emp) { return $emp['is_active'] == 0; });
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -121,14 +132,8 @@ $inactive_employees = array_filter($employees, function($emp) {
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        .btn-reactivate {
-            border-color: #f59e0b;
-            color: #f59e0b;
-        }
-        .btn-reactivate:hover {
-            background: #fffbeb;
-            border-color: #d97706;
-        }
+        .btn-reactivate { border-color: #f59e0b; color: #f59e0b; }
+        .btn-reactivate:hover { background: #fffbeb; border-color: #d97706; }
     </style>
 </head>
 <body class="paged-layout">
@@ -301,7 +306,6 @@ $inactive_employees = array_filter($employees, function($emp) {
             function updateTaxDisplay() {
                 const selected = select.options[select.selectedIndex];
                 const taxRate = selected.getAttribute('data-tax');
-                
                 if (selected.value === 'Custom') {
                     customContainer.style.display = 'block';
                 } else {
@@ -309,36 +313,23 @@ $inactive_employees = array_filter($employees, function($emp) {
                     hidden.value = taxRate;
                 }
             }
-            
             select.addEventListener('change', updateTaxDisplay);
             updateTaxDisplay();
         }
 
         function confirmDeactivate(empId, empName) {
-            if (confirm(`Are you sure you want to deactivate ${empName}?`)) {
-                submitAction('deactivate', empId);
-            }
+            if (confirm(`Are you sure you want to deactivate ${empName}?`)) submitAction('deactivate', empId);
         }
-
         function confirmReactivate(empId, empName) {
-            if (confirm(`Reactivate ${empName}?`)) {
-                submitAction('reactivate', empId);
-            }
+            if (confirm(`Reactivate ${empName}?`)) submitAction('reactivate', empId);
         }
-
         function confirmDelete(empId, empName) {
-            if (confirm(`Permanently delete ${empName} and ALL their records?\nThis cannot be undone.`)) {
-                submitAction('delete', empId);
-            }
+            if (confirm(`Permanently delete ${empName} and ALL their records?\nThis cannot be undone.`)) submitAction('delete', empId);
         }
-
         function submitAction(action, empId) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `
-                <input type="hidden" name="action" value="${action}">
-                <input type="hidden" name="employee_id" value="${empId}">
-            `;
+            form.innerHTML = `<input type="hidden" name="action" value="${action}"><input type="hidden" name="employee_id" value="${empId}">`;
             document.body.appendChild(form);
             form.submit();
         }

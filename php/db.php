@@ -13,8 +13,15 @@ try {
     die("Connection failed: " . $e->getMessage());
 }
 
-// Phase 1: Add or update employee
+// Phase 1: Add or update employee (now with duplicate check)
 function configureEmployee($pdo, $id_code, $name, $position, $hourly_rate, $tax_rate) {
+    // Check for duplicate id_code
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ?");
+    $stmt->execute([$id_code]);
+    if ($stmt->fetchColumn() > 0) {
+        return false; // Duplicate ID code
+    }
+
     $stmt = $pdo->prepare("INSERT INTO employees (employee_id_code, full_name, position, hourly_rate, tax_rate) VALUES (?, ?, ?, ?, ?)");
     return $stmt->execute([$id_code, $name, $position, $hourly_rate, $tax_rate]);
 }
@@ -34,18 +41,16 @@ function saveDailyLog($pdo, $employee_id, $date, $reg, $ot, $sick, $vac, $is_day
 
 // Phase 3 & 4: Calculate and store payroll record
 function processPayrollRecord($pdo, $employee_id, $month_year, $reg, $ot, $sick, $vac) {
-    // Get employee info
     $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
     $stmt->execute([$employee_id]);
     $emp = $stmt->fetch();
     if (!$emp) return false;
 
-    // Calculation waterfall
     $total_hours        = $reg + $ot + $sick + $vac;
     $gross_income       = $total_hours * $emp['hourly_rate'];
-    $sss                = min($gross_income * 0.05, 25.00);   // 5%, capped at $25
-    $philhealth         = $gross_income * 0.025;              // 2.5%
-    $pagibig            = 4.00;                               // Flat $4
+    $sss                = min($gross_income * 0.05, 25.00);
+    $philhealth         = $gross_income * 0.025;
+    $pagibig            = 4.00;
     $total_deductions   = $sss + $philhealth + $pagibig;
     $taxable_income     = $gross_income - $total_deductions;
     $total_tax_withheld = $taxable_income * ($emp['tax_rate'] / 100);
@@ -74,8 +79,15 @@ function getEmployeeById($pdo, $employee_id) {
     return $stmt->fetch();
 }
 
-// Update employee information
+// Update employee information (now with duplicate id_code check)
 function updateEmployee($pdo, $employee_id, $id_code, $name, $position, $hourly_rate, $tax_rate) {
+    // Check for duplicate id_code (excluding current employee)
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ? AND id != ?");
+    $stmt->execute([$id_code, $employee_id]);
+    if ($stmt->fetchColumn() > 0) {
+        return false; // Duplicate ID code
+    }
+
     $stmt = $pdo->prepare("
         UPDATE employees 
         SET employee_id_code = ?, full_name = ?, position = ?, hourly_rate = ?, tax_rate = ?
@@ -84,15 +96,15 @@ function updateEmployee($pdo, $employee_id, $id_code, $name, $position, $hourly_
     return $stmt->execute([$id_code, $name, $position, $hourly_rate, $tax_rate, $employee_id]);
 }
 
-// Reactivate employee (set is_active back to TRUE)
-function reactivateEmployee($pdo, $employee_id) {
-    $stmt = $pdo->prepare("UPDATE employees SET is_active = TRUE WHERE id = ?");
-    return $stmt->execute([$employee_id]);
-}
-
 // Soft-delete employee (set is_active to FALSE)
 function deactivateEmployee($pdo, $employee_id) {
     $stmt = $pdo->prepare("UPDATE employees SET is_active = FALSE WHERE id = ?");
+    return $stmt->execute([$employee_id]);
+}
+
+// Reactivate employee (set is_active back to TRUE)
+function reactivateEmployee($pdo, $employee_id) {
+    $stmt = $pdo->prepare("UPDATE employees SET is_active = TRUE WHERE id = ?");
     return $stmt->execute([$employee_id]);
 }
 
@@ -133,7 +145,6 @@ function getDailyLogsByMonth($pdo, $employee_id, $month_year) {
     ");
     $stmt->execute([$employee_id, $month_year]);
     $rows = $stmt->fetchAll();
-    // Key by day number for easy lookup
     $keyed = [];
     foreach ($rows as $row) {
         $keyed[(int)$row['day_num']] = $row;
@@ -158,7 +169,6 @@ function updatePayrollRecord($pdo, $employee_id, $month_year, $reg, $ot, $sick, 
     $total_tax_withheld = $taxable_income * ($emp['tax_rate'] / 100);
     $net_income         = $taxable_income - $total_tax_withheld;
 
-    // Update the most recent payroll record for this employee+month
     $stmt = $pdo->prepare("
         UPDATE payroll_records 
         SET gross_income = ?, sss_deduction = ?, philhealth_deduction = ?,
@@ -174,7 +184,7 @@ function updatePayrollRecord($pdo, $employee_id, $month_year, $reg, $ot, $sick, 
     ]);
 }
 
-// Dashboard: fetch employees with their LATEST payroll record (original behavior)
+// Dashboard: fetch employees with their LATEST payroll record
 function getEmployeesWithLatestPayroll($pdo) {
     $stmt = $pdo->query("
         SELECT 
@@ -196,11 +206,9 @@ function getEmployeesWithLatestPayroll($pdo) {
     return $stmt->fetchAll();
 }
 
-// Dashboard: fetch employees who have payroll records for a specific month (YYYY-MM)
+// Dashboard: fetch employees with payroll for a specific month
 function getEmployeesWithPayrollByMonth($pdo, $month_year) {
-    // month_year is stored as a DATE (YYYY-MM-01) in payroll_records
     $month_start = $month_year . '-01';
-
     $stmt = $pdo->prepare("
         SELECT 
             e.id AS emp_id, e.full_name, e.employee_id_code, e.position,
@@ -223,9 +231,7 @@ function getEmployeesWithPayrollByMonth($pdo, $month_year) {
     return $stmt->fetchAll();
 }
 
-// ============================================================
-// BULK IMPORT – Employees from CSV
-// ============================================================
+// Bulk import employees from CSV
 function bulkImportEmployees($pdo, $filePath) {
     $imported = 0;
     $skipped = 0;
@@ -243,18 +249,14 @@ function bulkImportEmployees($pdo, $filePath) {
 
     $header = array_map('trim', $header);
     $header = array_map('strtolower', $header);
-
     $rowNum = 1;
+
     while (($row = fgetcsv($handle)) !== false) {
         $rowNum++;
         if (count($row) < 5) continue;
 
         $data = @array_combine($header, $row);
-        if ($data === false) {
-            $errors[] = "Row $rowNum: unable to parse.";
-            $skipped++;
-            continue;
-        }
+        if ($data === false) { $errors[] = "Row $rowNum: unable to parse."; $skipped++; continue; }
 
         $id_code    = trim($data['employee_id_code'] ?? '');
         $full_name  = trim($data['full_name'] ?? '');
@@ -263,36 +265,24 @@ function bulkImportEmployees($pdo, $filePath) {
         $tax_rate    = trim($data['tax_rate'] ?? '');
 
         if (empty($id_code) || empty($full_name) || empty($position) || $hourly_rate === '' || $tax_rate === '') {
-            $errors[] = "Row $rowNum: missing required fields.";
-            $skipped++;
-            continue;
+            $errors[] = "Row $rowNum: missing required fields."; $skipped++; continue;
         }
-
         if (!is_numeric($hourly_rate) || floatval($hourly_rate) < 0) {
-            $errors[] = "Row $rowNum: invalid hourly rate.";
-            $skipped++;
-            continue;
+            $errors[] = "Row $rowNum: invalid hourly rate."; $skipped++; continue;
         }
-
         if (!is_numeric($tax_rate) || floatval($tax_rate) < 0 || floatval($tax_rate) > 100) {
-            $errors[] = "Row $rowNum: invalid tax rate (must be 0-100).";
-            $skipped++;
-            continue;
+            $errors[] = "Row $rowNum: invalid tax rate (must be 0-100)."; $skipped++; continue;
         }
 
         $valid_positions = ['Intern', 'Contractor', 'Regular Staff', 'Manager', 'Custom'];
         if (!in_array($position, $valid_positions, true)) {
-            $errors[] = "Row $rowNum: invalid position '{$position}'. Must be one of: " . implode(', ', $valid_positions);
-            $skipped++;
-            continue;
+            $errors[] = "Row $rowNum: invalid position '{$position}'."; $skipped++; continue;
         }
 
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ?");
         $stmt->execute([$id_code]);
         if ($stmt->fetchColumn() > 0) {
-            $errors[] = "Row $rowNum: employee_id_code '{$id_code}' already exists.";
-            $skipped++;
-            continue;
+            $errors[] = "Row $rowNum: employee_id_code '{$id_code}' already exists."; $skipped++; continue;
         }
 
         try {
@@ -309,57 +299,28 @@ function bulkImportEmployees($pdo, $filePath) {
     return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
 }
 
-// ============================================================
-// AUTHENTICATION FUNCTIONS (User Registration & Login)
-// ============================================================
+// --- Authentication functions (unchanged) ---
 function checkCredentialsExists($pdo, $username, $email) {
     $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $username_exists = (int)$stmt->fetch()['cnt'] > 0;
-    
     $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $email_exists = (int)$stmt->fetch()['cnt'] > 0;
-    
-    return [
-        'username_exists' => $username_exists,
-        'email_exists' => $email_exists
-    ];
+    return ['username_exists' => $username_exists, 'email_exists' => $email_exists];
 }
 
 function registerUser($pdo, $username, $email, $password, $full_name = '', $role = 'staff') {
     $exists = checkCredentialsExists($pdo, $username, $email);
-    
-    if ($exists['username_exists']) {
-        return [
-            'success' => false,
-            'message' => 'Username already exists. Please choose a different username.'
-        ];
-    }
-    
-    if ($exists['email_exists']) {
-        return [
-            'success' => false,
-            'message' => 'Email already registered. Please use a different email or login instead.'
-        ];
-    }
-    
+    if ($exists['username_exists']) return ['success' => false, 'message' => 'Username already exists.'];
+    if ($exists['email_exists'])    return ['success' => false, 'message' => 'Email already registered.'];
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
-    
     try {
-        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, full_name, role, is_active) 
-                              VALUES (?, ?, ?, ?, ?, TRUE)");
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, ?, TRUE)");
         $stmt->execute([$username, $email, $password_hash, $full_name, $role]);
-        
-        return [
-            'success' => true,
-            'message' => 'Registration successful! You can now login.'
-        ];
+        return ['success' => true, 'message' => 'Registration successful!'];
     } catch (PDOException $e) {
-        return [
-            'success' => false,
-            'message' => 'Registration failed. Please try again later.'
-        ];
+        return ['success' => false, 'message' => 'Registration failed.'];
     }
 }
 
@@ -368,40 +329,20 @@ function authenticateUser($pdo, $username, $password) {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND is_active = TRUE");
         $stmt->execute([$username]);
         $user = $stmt->fetch();
-        
-        if (!$user) {
-            return [
-                'success' => false,
-                'message' => 'Invalid username or password.'
-            ];
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            return ['success' => false, 'message' => 'Invalid username or password.'];
         }
-        
-        if (!password_verify($password, $user['password_hash'])) {
-            return [
-                'success' => false,
-                'message' => 'Invalid username or password.'
-            ];
-        }
-        
-        // Update last login
         $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
         $stmt->execute([$user['id']]);
-        
         return [
             'success' => true,
             'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'email' => $user['email'],
-                'full_name' => $user['full_name'],
-                'role' => $user['role']
+                'id' => $user['id'], 'username' => $user['username'], 'email' => $user['email'],
+                'full_name' => $user['full_name'], 'role' => $user['role']
             ]
         ];
     } catch (PDOException $e) {
-        return [
-            'success' => false,
-            'message' => 'Login failed. Please try again later.'
-        ];
+        return ['success' => false, 'message' => 'Login failed.'];
     }
 }
 
@@ -411,14 +352,6 @@ function getUserById($pdo, $user_id) {
     return $stmt->fetch();
 }
 
-function isUserLoggedIn() {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
-}
-
-function getCurrentUser() {
-    if (isUserLoggedIn()) {
-        return $_SESSION['user'];
-    }
-    return null;
-}
+function isUserLoggedIn() { return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']); }
+function getCurrentUser() { return isUserLoggedIn() ? $_SESSION['user'] : null; }
 ?>
