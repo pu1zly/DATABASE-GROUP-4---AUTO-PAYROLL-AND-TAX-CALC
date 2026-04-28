@@ -16,7 +16,11 @@ function formatCurrency(value, currency) {
     const amount = Number(value);
     if (!Number.isFinite(amount)) return '';
     const symbol = currency === 'PHP' ? '₱' : '$';
-    return symbol + amount.toFixed(2);
+    const formatted = amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    return symbol + formatted;
 }
 
 function updateCurrencyControls() {
