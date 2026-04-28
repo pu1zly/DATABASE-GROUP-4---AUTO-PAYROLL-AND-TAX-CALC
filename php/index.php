@@ -1,6 +1,15 @@
 <?php
 // index.php - Main Dashboard View
+session_start();
 require_once 'db.php';
+
+// Check if user is logged in
+if (!isUserLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$current_user = getCurrentUser();
 
 // Get selected month from GET param, default to current month
 $selected_month = isset($_GET['month']) && !empty($_GET['month']) ? $_GET['month'] : date('Y-m');

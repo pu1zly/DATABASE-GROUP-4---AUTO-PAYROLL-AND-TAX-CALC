@@ -1,6 +1,13 @@
 <?php
 // phase2.php - 30-Day Timesheet (new + edit mode)
+session_start();
 require_once 'db.php';
+
+// Check if user is logged in
+if (!isUserLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
 
 // ── AJAX: return employee IDs that already have a record for a given month
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'taken_employees' && isset($_GET['month'])) {

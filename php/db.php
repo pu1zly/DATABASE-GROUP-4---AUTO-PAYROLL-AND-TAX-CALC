@@ -171,4 +171,142 @@ function getEmployeesWithPayrollByMonth($pdo, $month_year) {
     $stmt->execute([$month_start]);
     return $stmt->fetchAll();
 }
+
+// ============================================================
+// AUTHENTICATION FUNCTIONS (User Registration & Login)
+// ============================================================
+
+/**
+ * Check if username or email already exists
+ * Returns array with 'username_exists' and 'email_exists' booleans
+ */
+function checkCredentialsExists($pdo, $username, $email) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $username_exists = (int)$stmt->fetch()['cnt'] > 0;
+    
+    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $email_exists = (int)$stmt->fetch()['cnt'] > 0;
+    
+    return [
+        'username_exists' => $username_exists,
+        'email_exists' => $email_exists
+    ];
+}
+
+/**
+ * Register a new user
+ * Returns array with 'success' status and 'message'
+ */
+function registerUser($pdo, $username, $email, $password, $full_name = '', $role = 'staff') {
+    // Check for duplicate credentials
+    $exists = checkCredentialsExists($pdo, $username, $email);
+    
+    if ($exists['username_exists']) {
+        return [
+            'success' => false,
+            'message' => 'Username already exists. Please choose a different username.'
+        ];
+    }
+    
+    if ($exists['email_exists']) {
+        return [
+            'success' => false,
+            'message' => 'Email already registered. Please use a different email or login instead.'
+        ];
+    }
+    
+    // Hash the password
+    $password_hash = password_hash($password, PASSWORD_BCRYPT);
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, full_name, role, is_active) 
+                              VALUES (?, ?, ?, ?, ?, TRUE)");
+        $stmt->execute([$username, $email, $password_hash, $full_name, $role]);
+        
+        return [
+            'success' => true,
+            'message' => 'Registration successful! You can now login.'
+        ];
+    } catch (PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Registration failed. Please try again later.'
+        ];
+    }
+}
+
+/**
+ * Authenticate user (login)
+ * Returns array with 'success' status and 'user' data (if successful)
+ */
+function authenticateUser($pdo, $username, $password) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND is_active = TRUE");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'Invalid username or password.'
+            ];
+        }
+        
+        // Verify password
+        if (!password_verify($password, $user['password_hash'])) {
+            return [
+                'success' => false,
+                'message' => 'Invalid username or password.'
+            ];
+        }
+        
+        // Update last login
+        $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        
+        return [
+            'success' => true,
+            'user' => [
+                'id' => $user['id'],
+                'username' => $user['username'],
+                'email' => $user['email'],
+                'full_name' => $user['full_name'],
+                'role' => $user['role']
+            ]
+        ];
+    } catch (PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Login failed. Please try again later.'
+        ];
+    }
+}
+
+/**
+ * Get user by ID
+ */
+function getUserById($pdo, $user_id) {
+    $stmt = $pdo->prepare("SELECT id, username, email, full_name, role, is_active FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    return $stmt->fetch();
+}
+
+/**
+ * Check if user is logged in
+ */
+function isUserLoggedIn() {
+    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+}
+
+/**
+ * Get current logged-in user data
+ */
+function getCurrentUser() {
+    if (isUserLoggedIn()) {
+        return $_SESSION['user'];
+    }
+    return null;
+}
 ?>

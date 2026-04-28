@@ -1,6 +1,14 @@
 <?php
 // phase1.php - Employee Configuration
+session_start();
 require_once 'db.php';
+
+// Check if user is logged in
+if (!isUserLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
 $message = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['configure_employee'])) {
