@@ -16,6 +16,23 @@ $selected_month = isset($_GET['month']) && !empty($_GET['month']) ? $_GET['month
 
 // Fetch employees with payroll for the selected month
 $payroll_display = getEmployeesWithPayrollByMonth($pdo, $selected_month);
+
+// --- Summary statistics ---
+// Active / Inactive headcount
+$active_count = count(getEmployees($pdo));
+$all_employees = getAllEmployeesIncludingInactive($pdo);
+$inactive_count = count($all_employees) - $active_count;
+
+// Payroll totals from current view
+$total_gross = 0;
+$total_net = 0;
+$total_tax = 0;
+foreach ($payroll_display as $rec) {
+    $total_gross += $rec['gross_income'];
+    $total_net   += $rec['net_income'];
+    $total_tax   += $rec['total_tax_withheld'];
+}
+$avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,6 +44,61 @@ $payroll_display = getEmployeesWithPayrollByMonth($pdo, $selected_month);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: 'DM Mono', monospace;
+            color: var(--text);
+        }
+        .stat-value.highlight {
+            color: #10b981;
+        }
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .export-btn:hover { background: #059669; }
+    </style>
 </head>
 <body class="paged-layout">
     <?php include 'sidebar.php'; ?>
@@ -36,6 +108,34 @@ $payroll_display = getEmployeesWithPayrollByMonth($pdo, $selected_month);
             <h1>Dashboard</h1>
             <p>Payroll overview &amp; calculation breakdown</p>
         </header>
+
+        <!-- Summary Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Active Employees</div>
+                <div class="stat-value"><?php echo $active_count; ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Inactive Employees</div>
+                <div class="stat-value"><?php echo $inactive_count; ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Gross (<?php echo date('M Y', strtotime($selected_month . '-01')); ?>)</div>
+                <div class="stat-value">$<?php echo number_format($total_gross, 2); ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Net</div>
+                <div class="stat-value highlight">$<?php echo number_format($total_net, 2); ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Tax Withheld</div>
+                <div class="stat-value">$<?php echo number_format($total_tax, 2); ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Net Income</div>
+                <div class="stat-value">$<?php echo number_format($avg_net, 2); ?></div>
+            </div>
+        </div>
 
         <!-- Month Filter -->
         <section class="card" style="padding: 18px 24px; margin-bottom: 20px;">
@@ -61,6 +161,11 @@ $payroll_display = getEmployeesWithPayrollByMonth($pdo, $selected_month);
                         ← Back to current month
                     </a>
                 <?php endif; ?>
+                <div style="margin-left:auto;">
+                    <a href="export_payroll.php?month=<?php echo urlencode($selected_month); ?>" class="export-btn">
+                        📥 Export CSV
+                    </a>
+                </div>
             </form>
         </section>
 
@@ -85,7 +190,7 @@ $payroll_display = getEmployeesWithPayrollByMonth($pdo, $selected_month);
                     <tbody>
                         <?php if (empty($payroll_display)): ?>
                             <tr>
-                                <td colspan="9" style="text-align:center; padding: 48px 20px;">
+                                <td colspan="10" style="text-align:center; padding: 48px 20px;">
                                     <div style="color:var(--text-muted); font-size:.95rem;">
                                         No payroll records found for
                                         <strong><?php echo date('F Y', strtotime($selected_month . '-01')); ?></strong>.
