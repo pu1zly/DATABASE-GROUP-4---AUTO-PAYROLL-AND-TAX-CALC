@@ -13,7 +13,7 @@ $message_type = "";
 $editing_employee = null;
 $edit_id = null;
 
-// Handle POST actions: deactivate, delete, configure, bulk_import
+// Handle POST actions: deactivate, reactivate, delete, configure, bulk_import
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
@@ -25,6 +25,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             $message_type = "success";
         } else {
             $message = "Error deactivating employee.";
+            $message_type = "error";
+        }
+    }
+    elseif ($action == 'reactivate' && isset($_POST['employee_id'])) {
+        $emp_id = (int)$_POST['employee_id'];
+        if (reactivateEmployee($pdo, $emp_id)) {
+            $message = "Employee reactivated successfully.";
+            $message_type = "success";
+        } else {
+            $message = "Error reactivating employee.";
             $message_type = "error";
         }
     }
@@ -110,6 +120,16 @@ $inactive_employees = array_filter($employees, function($emp) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .btn-reactivate {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+        .btn-reactivate:hover {
+            background: #fffbeb;
+            border-color: #d97706;
+        }
+    </style>
 </head>
 <body class="paged-layout">
     <?php include 'sidebar.php'; ?>
@@ -222,7 +242,7 @@ $inactive_employees = array_filter($employees, function($emp) {
                                     <th>Position</th>
                                     <th>Rate/hr</th>
                                     <th>Tax</th>
-                                    <th>Action</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -236,7 +256,10 @@ $inactive_employees = array_filter($employees, function($emp) {
                                     <td class="mono">$<?php echo number_format($emp['hourly_rate'], 2); ?></td>
                                     <td class="mono"><?php echo $emp['tax_rate']; ?>%</td>
                                     <td>
-                                        <button type="button" class="btn-small btn-delete" onclick="confirmDelete(<?php echo $emp['id']; ?>, '<?php echo htmlspecialchars($emp['full_name']); ?>')">🗑️ Delete Permanently</button>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn-small btn-reactivate" onclick="confirmReactivate(<?php echo $emp['id']; ?>, '<?php echo htmlspecialchars($emp['full_name']); ?>')">🔄 Reactivate</button>
+                                            <button type="button" class="btn-small btn-delete" onclick="confirmDelete(<?php echo $emp['id']; ?>, '<?php echo htmlspecialchars($emp['full_name']); ?>')">🗑️ Delete Permanently</button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -293,28 +316,31 @@ $inactive_employees = array_filter($employees, function($emp) {
 
         function confirmDeactivate(empId, empName) {
             if (confirm(`Are you sure you want to deactivate ${empName}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="deactivate">
-                    <input type="hidden" name="employee_id" value="${empId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
+                submitAction('deactivate', empId);
+            }
+        }
+
+        function confirmReactivate(empId, empName) {
+            if (confirm(`Reactivate ${empName}?`)) {
+                submitAction('reactivate', empId);
             }
         }
 
         function confirmDelete(empId, empName) {
             if (confirm(`Permanently delete ${empName} and ALL their records?\nThis cannot be undone.`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="employee_id" value="${empId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
+                submitAction('delete', empId);
             }
+        }
+
+        function submitAction(action, empId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="${action}">
+                <input type="hidden" name="employee_id" value="${empId}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
 
         document.addEventListener('DOMContentLoaded', initPositionSelect);

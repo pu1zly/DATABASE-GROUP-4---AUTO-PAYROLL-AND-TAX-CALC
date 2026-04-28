@@ -84,6 +84,12 @@ function updateEmployee($pdo, $employee_id, $id_code, $name, $position, $hourly_
     return $stmt->execute([$id_code, $name, $position, $hourly_rate, $tax_rate, $employee_id]);
 }
 
+// Reactivate employee (set is_active back to TRUE)
+function reactivateEmployee($pdo, $employee_id) {
+    $stmt = $pdo->prepare("UPDATE employees SET is_active = TRUE WHERE id = ?");
+    return $stmt->execute([$employee_id]);
+}
+
 // Soft-delete employee (set is_active to FALSE)
 function deactivateEmployee($pdo, $employee_id) {
     $stmt = $pdo->prepare("UPDATE employees SET is_active = FALSE WHERE id = ?");
