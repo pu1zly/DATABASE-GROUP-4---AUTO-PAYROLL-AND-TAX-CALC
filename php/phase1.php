@@ -17,7 +17,7 @@ $edit_id = null;
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // Single employee actions (from per-row buttons)
+    // Single employee actions
     if (in_array($action, ['deactivate','reactivate','delete']) && isset($_POST['employee_id'])) {
         $emp_id = (int)$_POST['employee_id'];
         switch ($action) {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 break;
         }
     }
-    // Bulk actions (from checkbox bar)
+    // Bulk actions
     elseif (in_array($action, ['bulk_deactivate','bulk_reactivate','bulk_delete']) && isset($_POST['selected_ids']) && is_array($_POST['selected_ids'])) {
         $ids = array_map('intval', $_POST['selected_ids']);
         $count = 0;
@@ -67,11 +67,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
         $id_code      = $_POST['employee_id_code'];
         $name         = $_POST['full_name'];
         $position     = $_POST['position'];
-        if ($position == 'Custom' && !empty($_POST['custom_position'])) {
-            $position = trim($_POST['custom_position']);
+        $custom_pos   = trim($_POST['custom_position'] ?? '');
+
+        // If "Custom" is chosen, use the custom position – and enforce it not empty
+        if ($position === 'Custom') {
+            if (empty($custom_pos)) {
+                $message = "Custom position title cannot be empty.";
+                $message_type = "error";
+                // preserve form values for re-display
+                $editing_employee = $edit_id ? getEmployeeById($pdo, $edit_id) : null;
+                goto skip_configure;
+            }
+            $position = $custom_pos;
         }
+
         $hourly_rate  = $_POST['hourly_rate'];
-        $tax_rate     = ($_POST['position'] == 'Custom') ? $_POST['custom_tax_rate'] : $_POST['tax_rate'];
+        $tax_rate     = ($_POST['position'] === 'Custom') ? $_POST['custom_tax_rate'] : $_POST['tax_rate'];
 
         if ($edit_id) {
             if (updateEmployee($pdo, $edit_id, $id_code, $name, $position, $hourly_rate, $tax_rate)) {
@@ -102,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 $message_type = "error";
             }
         }
+        skip_configure:
     }
     // Bulk CSV import
     elseif ($action == 'bulk_import') {
@@ -179,6 +191,7 @@ function isStandardPosition($pos) {
         .select-all-checkbox {
             margin-right: 8px;
         }
+        .required-star { color: #ef4444; margin-left: 4px; }
     </style>
 </head>
 <body class="paged-layout">
@@ -198,27 +211,27 @@ function isStandardPosition($pos) {
             <!-- Add / Edit Employee Form -->
             <section class="card">
                 <h2><?php echo $editing_employee ? "Edit Employee" : "Add New Employee"; ?></h2>
-                <form method="POST" id="config-form">
+                <form method="POST" id="config-form" novalidate>
                     <input type="hidden" name="action" value="configure">
                     <?php if ($editing_employee): ?>
                         <input type="hidden" name="edit_id" value="<?php echo $editing_employee['id']; ?>">
                     <?php endif; ?>
                     <div class="form-group">
-                        <label>ID Code</label>
+                        <label>ID Code <span class="required-star">*</span></label>
                         <input type="text" name="employee_id_code" placeholder="e.g. EMP-001" value="<?php echo htmlspecialchars($editing_employee['employee_id_code'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
-                        <label>Full Name</label>
+                        <label>Full Name <span class="required-star">*</span></label>
                         <input type="text" name="full_name" placeholder="e.g. Juan dela Cruz" value="<?php echo htmlspecialchars($editing_employee['full_name'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
-                        <label>Hourly Rate ($)</label>
+                        <label>Hourly Rate ($) <span class="required-star">*</span></label>
                         <input type="number" step="0.01" name="hourly_rate" placeholder="25.00" value="<?php echo htmlspecialchars($editing_employee['hourly_rate'] ?? ''); ?>" required>
                     </div>
 
                     <!-- Position -->
                     <div class="form-group">
-                        <label>Position</label>
+                        <label>Position <span class="required-star">*</span></label>
                         <select name="position" id="position-select" required>
                             <option value="">Select Position</option>
                             <option value="Intern" data-tax="0" <?php echo ($editing_employee && $editing_employee['position'] == 'Intern') ? 'selected' : ''; ?>>Intern — 0% Tax</option>
@@ -228,14 +241,14 @@ function isStandardPosition($pos) {
                             <option value="Custom" data-tax="" <?php echo ($editing_employee && ($editing_employee['position'] == 'Custom' || !isStandardPosition($editing_employee['position']))) ? 'selected' : ''; ?>>Custom → Type Your Own</option>
                         </select>
                         <div id="custom-position-container" class="form-group" style="margin-top:8px; display:<?php echo ($editing_employee && ($editing_employee['position'] == 'Custom' || !isStandardPosition($editing_employee['position']))) ? 'block' : 'none'; ?>;">
-                            <label>Custom Position Title</label>
-                            <input type="text" name="custom_position" placeholder="e.g. Software Engineer" value="<?php echo ($editing_employee && !isStandardPosition($editing_employee['position']) ? htmlspecialchars($editing_employee['position']) : ''); ?>">
+                            <label>Custom Position Title <span class="required-star">*</span></label>
+                            <input type="text" name="custom_position" id="custom-position-input" placeholder="e.g. Software Engineer" value="<?php echo ($editing_employee && !isStandardPosition($editing_employee['position']) ? htmlspecialchars($editing_employee['position']) : ''); ?>" required>
                         </div>
                     </div>
                     <input type="hidden" name="tax_rate" id="tax_rate_hidden" value="<?php echo htmlspecialchars($editing_employee['tax_rate'] ?? ''); ?>">
                     <div id="custom-tax-container" class="form-group" style="display:<?php echo ($editing_employee && $editing_employee['position'] == 'Custom') ? 'block' : 'none'; ?>;">
-                        <label>Custom Tax Rate (%)</label>
-                        <input type="number" step="0.01" name="custom_tax_rate" placeholder="e.g. 15" value="<?php echo ($editing_employee && $editing_employee['position'] == 'Custom') ? htmlspecialchars($editing_employee['tax_rate']) : ''; ?>">
+                        <label>Custom Tax Rate (%) <span class="required-star">*</span></label>
+                        <input type="number" step="0.01" name="custom_tax_rate" id="custom-tax-input" placeholder="e.g. 15" value="<?php echo ($editing_employee && $editing_employee['position'] == 'Custom') ? htmlspecialchars($editing_employee['tax_rate']) : ''; ?>" required>
                     </div>
 
                     <div style="display: flex; gap: 10px;">
@@ -261,15 +274,23 @@ function isStandardPosition($pos) {
                     </div>
                     <div class="table-container">
                         <table>
-                            <thead><tr><th style="width:40px;"></th><th>Name</th><th>Position</th><th>Rate/hr</th><th>Tax</th><th>Actions</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"></th>
+                                    <th>ID Code</th>
+                                    <th>Name</th>
+                                    <th>Position</th>
+                                    <th>Rate/hr</th>
+                                    <th>Tax</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 <?php foreach ($active_employees as $emp): ?>
                                 <tr>
                                     <td><input type="checkbox" name="selected_ids[]" value="<?php echo $emp['id']; ?>" class="active-check"></td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($emp['full_name']); ?></strong><br>
-                                        <small><?php echo htmlspecialchars($emp['employee_id_code']); ?></small>
-                                    </td>
+                                    <td><code><?php echo htmlspecialchars($emp['employee_id_code']); ?></code></td>
+                                    <td><strong><?php echo htmlspecialchars($emp['full_name']); ?></strong></td>
                                     <td><span class="badge"><?php echo htmlspecialchars($emp['position']); ?></span></td>
                                     <td class="mono">$<?php echo number_format($emp['hourly_rate'], 2); ?></td>
                                     <td class="mono"><?php echo $emp['tax_rate']; ?>%</td>
@@ -305,15 +326,23 @@ function isStandardPosition($pos) {
                             </div>
                             <div class="table-container">
                                 <table style="opacity:0.85;">
-                                    <thead><tr><th style="width:40px;"></th><th>Name</th><th>Position</th><th>Rate/hr</th><th>Tax</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px;"></th>
+                                            <th>ID Code</th>
+                                            <th>Name</th>
+                                            <th>Position</th>
+                                            <th>Rate/hr</th>
+                                            <th>Tax</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         <?php foreach ($inactive_employees as $emp): ?>
                                         <tr>
                                             <td><input type="checkbox" name="selected_ids[]" value="<?php echo $emp['id']; ?>" class="inactive-check"></td>
-                                            <td>
-                                                <strong><?php echo htmlspecialchars($emp['full_name']); ?></strong><br>
-                                                <small><?php echo htmlspecialchars($emp['employee_id_code']); ?></small>
-                                            </td>
+                                            <td><code><?php echo htmlspecialchars($emp['employee_id_code']); ?></code></td>
+                                            <td><strong><?php echo htmlspecialchars($emp['full_name']); ?></strong></td>
                                             <td><span class="badge"><?php echo htmlspecialchars($emp['position']); ?></span></td>
                                             <td class="mono">$<?php echo number_format($emp['hourly_rate'], 2); ?></td>
                                             <td class="mono"><?php echo $emp['tax_rate']; ?>%</td>
@@ -361,21 +390,32 @@ function isStandardPosition($pos) {
             const posSelect = document.getElementById('position-select');
             const taxHidden = document.getElementById('tax_rate_hidden');
             const customTaxContainer = document.getElementById('custom-tax-container');
+            const customTaxInput = document.getElementById('custom-tax-input');
             const customPosContainer = document.getElementById('custom-position-container');
-            const customPosInput = document.querySelector('input[name="custom_position"]');
+            const customPosInput = document.getElementById('custom-position-input');
 
             function updateDisplay() {
                 const selectedOption = posSelect.options[posSelect.selectedIndex];
                 const taxRate = selectedOption.getAttribute('data-tax');
-                const isCustom = selectedOption.value === 'Custom';
+                const isCustom = posSelect.value === 'Custom';
 
+                // Custom position field
                 customPosContainer.style.display = isCustom ? 'block' : 'none';
-                if (!isCustom && customPosInput) customPosInput.removeAttribute('required');
+                if (isCustom) {
+                    customPosInput.setAttribute('required', 'required');
+                } else {
+                    customPosInput.removeAttribute('required');
+                    customPosInput.value = ''; // clear when not in use
+                }
 
+                // Tax
                 if (isCustom) {
                     customTaxContainer.style.display = 'block';
+                    customTaxInput.setAttribute('required', 'required');
+                    taxHidden.value = ''; // will be taken from custom input
                 } else {
                     customTaxContainer.style.display = 'none';
+                    customTaxInput.removeAttribute('required');
                     taxHidden.value = taxRate;
                 }
             }
@@ -384,7 +424,7 @@ function isStandardPosition($pos) {
             updateDisplay();
         }
 
-        // Single-row action functions (unchanged)
+        // Single-row actions
         function confirmDeactivate(empId, empName) {
             if (confirm(`Are you sure you want to deactivate ${empName}?`)) {
                 submitSingleAction('deactivate', empId);
