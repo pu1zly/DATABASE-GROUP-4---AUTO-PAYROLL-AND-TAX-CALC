@@ -26,9 +26,9 @@ $current_user = getCurrentUser();
         </a>
 
         <span class="nav-section-label">Workflow</span>
-        <a href="phase1.php" class="<?php echo $current_page == 'phase1.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">⚙️</span>
-            <span>Employee Config</span>
+        <a href="phase1.php" class="<?php echo in_array($current_page, ['phase1.php', 'employee_history.php']) ? 'active' : ''; ?>">
+            <span class="nav-icon">👥</span>
+            <span>Directory</span>
         </a>
         <a href="phase2.php" class="<?php echo $current_page == 'phase2.php' ? 'active' : ''; ?>">
             <span class="nav-icon">📅</span>

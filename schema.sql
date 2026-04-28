@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS employees (
     position            ENUM('Intern', 'Contractor', 'Regular Staff', 'Manager', 'Custom') NOT NULL,
     hourly_rate         DECIMAL(10, 2) NOT NULL,
     tax_rate            DECIMAL(5, 2) NOT NULL,        -- Percentage (0, 10, 20, 30, or Custom)
+    is_active           BOOLEAN DEFAULT TRUE,          -- Soft-delete support (FALSE = deactivated)
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

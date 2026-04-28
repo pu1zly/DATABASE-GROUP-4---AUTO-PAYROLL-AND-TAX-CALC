@@ -57,9 +57,54 @@ function processPayrollRecord($pdo, $employee_id, $month_year, $reg, $ot, $sick,
     return $stmt->execute([$employee_id, $month_year, $gross_income, $sss, $philhealth, $pagibig, $taxable_income, $total_tax_withheld, $net_income]);
 }
 
-// Fetch all employees
+// Fetch all employees (active only)
 function getEmployees($pdo) {
+    return $pdo->query("SELECT * FROM employees WHERE is_active = TRUE ORDER BY id DESC")->fetchAll();
+}
+
+// Fetch all employees including inactive (for admin view)
+function getAllEmployeesIncludingInactive($pdo) {
     return $pdo->query("SELECT * FROM employees ORDER BY id DESC")->fetchAll();
+}
+
+// Get a single employee by ID
+function getEmployeeById($pdo, $employee_id) {
+    $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+    $stmt->execute([$employee_id]);
+    return $stmt->fetch();
+}
+
+// Update employee information
+function updateEmployee($pdo, $employee_id, $id_code, $name, $position, $hourly_rate, $tax_rate) {
+    $stmt = $pdo->prepare("
+        UPDATE employees 
+        SET employee_id_code = ?, full_name = ?, position = ?, hourly_rate = ?, tax_rate = ?
+        WHERE id = ?
+    ");
+    return $stmt->execute([$id_code, $name, $position, $hourly_rate, $tax_rate, $employee_id]);
+}
+
+// Soft-delete employee (set is_active to FALSE)
+function deactivateEmployee($pdo, $employee_id) {
+    $stmt = $pdo->prepare("UPDATE employees SET is_active = FALSE WHERE id = ?");
+    return $stmt->execute([$employee_id]);
+}
+
+// Permanently delete employee (cascade removes related payroll, logs, etc.)
+function deleteEmployee($pdo, $employee_id) {
+    $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
+    return $stmt->execute([$employee_id]);
+}
+
+// Get all payroll records for an employee (sorted by month descending)
+function getEmployeePayrollHistory($pdo, $employee_id) {
+    $stmt = $pdo->prepare("
+        SELECT * FROM payroll_records
+        WHERE employee_id = ?
+        ORDER BY month_year DESC, processed_at DESC
+    ");
+    $stmt->execute([$employee_id]);
+    return $stmt->fetchAll();
 }
 
 // Check if a payroll record already exists for employee+month
@@ -173,13 +218,94 @@ function getEmployeesWithPayrollByMonth($pdo, $month_year) {
 }
 
 // ============================================================
+// BULK IMPORT – Employees from CSV
+// ============================================================
+function bulkImportEmployees($pdo, $filePath) {
+    $imported = 0;
+    $skipped = 0;
+    $errors = [];
+
+    if (($handle = fopen($filePath, 'r')) === false) {
+        return ['imported' => 0, 'skipped' => 0, 'errors' => ['Could not open file.']];
+    }
+
+    $header = fgetcsv($handle);
+    if (!$header || count($header) < 5) {
+        fclose($handle);
+        return ['imported' => 0, 'skipped' => 0, 'errors' => ['CSV must have at least 5 columns: employee_id_code, full_name, position, hourly_rate, tax_rate']];
+    }
+
+    $header = array_map('trim', $header);
+    $header = array_map('strtolower', $header);
+
+    $rowNum = 1;
+    while (($row = fgetcsv($handle)) !== false) {
+        $rowNum++;
+        if (count($row) < 5) continue;
+
+        $data = @array_combine($header, $row);
+        if ($data === false) {
+            $errors[] = "Row $rowNum: unable to parse.";
+            $skipped++;
+            continue;
+        }
+
+        $id_code    = trim($data['employee_id_code'] ?? '');
+        $full_name  = trim($data['full_name'] ?? '');
+        $position   = trim($data['position'] ?? '');
+        $hourly_rate = trim($data['hourly_rate'] ?? '');
+        $tax_rate    = trim($data['tax_rate'] ?? '');
+
+        if (empty($id_code) || empty($full_name) || empty($position) || $hourly_rate === '' || $tax_rate === '') {
+            $errors[] = "Row $rowNum: missing required fields.";
+            $skipped++;
+            continue;
+        }
+
+        if (!is_numeric($hourly_rate) || floatval($hourly_rate) < 0) {
+            $errors[] = "Row $rowNum: invalid hourly rate.";
+            $skipped++;
+            continue;
+        }
+
+        if (!is_numeric($tax_rate) || floatval($tax_rate) < 0 || floatval($tax_rate) > 100) {
+            $errors[] = "Row $rowNum: invalid tax rate (must be 0-100).";
+            $skipped++;
+            continue;
+        }
+
+        $valid_positions = ['Intern', 'Contractor', 'Regular Staff', 'Manager', 'Custom'];
+        if (!in_array($position, $valid_positions, true)) {
+            $errors[] = "Row $rowNum: invalid position '{$position}'. Must be one of: " . implode(', ', $valid_positions);
+            $skipped++;
+            continue;
+        }
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE employee_id_code = ?");
+        $stmt->execute([$id_code]);
+        if ($stmt->fetchColumn() > 0) {
+            $errors[] = "Row $rowNum: employee_id_code '{$id_code}' already exists.";
+            $skipped++;
+            continue;
+        }
+
+        try {
+            $stmt = $pdo->prepare("INSERT INTO employees (employee_id_code, full_name, position, hourly_rate, tax_rate, is_active) VALUES (?, ?, ?, ?, ?, TRUE)");
+            $stmt->execute([$id_code, $full_name, $position, $hourly_rate, $tax_rate]);
+            $imported++;
+        } catch (PDOException $e) {
+            $errors[] = "Row $rowNum: database error - " . $e->getMessage();
+            $skipped++;
+        }
+    }
+
+    fclose($handle);
+    return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+}
+
+// ============================================================
 // AUTHENTICATION FUNCTIONS (User Registration & Login)
 // ============================================================
-
-/**
- * Check if username or email already exists
- * Returns array with 'username_exists' and 'email_exists' booleans
- */
 function checkCredentialsExists($pdo, $username, $email) {
     $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = ?");
     $stmt->execute([$username]);
@@ -195,12 +321,7 @@ function checkCredentialsExists($pdo, $username, $email) {
     ];
 }
 
-/**
- * Register a new user
- * Returns array with 'success' status and 'message'
- */
 function registerUser($pdo, $username, $email, $password, $full_name = '', $role = 'staff') {
-    // Check for duplicate credentials
     $exists = checkCredentialsExists($pdo, $username, $email);
     
     if ($exists['username_exists']) {
@@ -217,7 +338,6 @@ function registerUser($pdo, $username, $email, $password, $full_name = '', $role
         ];
     }
     
-    // Hash the password
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
     
     try {
@@ -237,10 +357,6 @@ function registerUser($pdo, $username, $email, $password, $full_name = '', $role
     }
 }
 
-/**
- * Authenticate user (login)
- * Returns array with 'success' status and 'user' data (if successful)
- */
 function authenticateUser($pdo, $username, $password) {
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND is_active = TRUE");
@@ -254,7 +370,6 @@ function authenticateUser($pdo, $username, $password) {
             ];
         }
         
-        // Verify password
         if (!password_verify($password, $user['password_hash'])) {
             return [
                 'success' => false,
@@ -284,25 +399,16 @@ function authenticateUser($pdo, $username, $password) {
     }
 }
 
-/**
- * Get user by ID
- */
 function getUserById($pdo, $user_id) {
     $stmt = $pdo->prepare("SELECT id, username, email, full_name, role, is_active FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     return $stmt->fetch();
 }
 
-/**
- * Check if user is logged in
- */
 function isUserLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-/**
- * Get current logged-in user data
- */
 function getCurrentUser() {
     if (isUserLoggedIn()) {
         return $_SESSION['user'];

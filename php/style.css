@@ -321,6 +321,84 @@ select {
 .btn-primary:hover  { background: var(--primary-dark); }
 .btn-primary:active { transform: scale(.98); }
 
+.btn-secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+    letter-spacing: .01em;
+}
+
+.btn-secondary:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary-dark);
+}
+
+.btn-secondary:active { transform: scale(.98); }
+
+/* ─── SMALL ACTION BUTTONS ──────────────────────────── */
+.btn-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: .8rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.btn-small:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.btn-edit {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.btn-edit:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+}
+
+.btn-view {
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.btn-view:hover {
+    background: #ecfdf5;
+    border-color: #059669;
+}
+
+.btn-delete {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.btn-delete:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+}
+
+.btn-small:active {
+    transform: scale(.95);
+}
+
 /* ─── ALERTS ──────────────────────────────────────────── */
 .alert {
     display: flex;
@@ -340,6 +418,13 @@ select {
 }
 
 .alert.success::before { content: '✓'; font-weight: 800; }
+
+.alert.warning {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+.alert.warning::before { content: '⚠'; font-weight: 800; }
 
 /* ─── TABLES ──────────────────────────────────────────── */
 .table-container { overflow-x: auto; }
