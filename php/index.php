@@ -104,9 +104,18 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
     <?php include 'sidebar.php'; ?>
 
     <main class="content-area">
-        <header class="content-header">
-            <h1>Dashboard</h1>
-            <p>Payroll overview &amp; calculation breakdown</p>
+        <header class="content-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; justify-content:space-between;">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Payroll overview &amp; calculation breakdown</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
+                <label for="currency-header-toggle" style="font-size:.75rem; font-weight:700; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;">Currency</label>
+                <select id="currency-header-toggle" data-currency-toggle style="border-radius:10px; border:1px solid var(--border); padding:10px 12px; background:#fff; color:#111; font-weight:600;">
+                    <option value="USD">USD</option>
+                    <option value="PHP">PHP</option>
+                </select>
+            </div>
         </header>
 
         <!-- Summary Statistics Cards -->
@@ -121,19 +130,19 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Gross (<?php echo date('M Y', strtotime($selected_month . '-01')); ?>)</div>
-                <div class="stat-value">$<?php echo number_format($total_gross, 2); ?></div>
+                <div class="stat-value"><span class="currency-amount" data-usd="<?php echo number_format($total_gross, 2, '.', ''); ?>">$<?php echo number_format($total_gross, 2); ?></span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Net</div>
-                <div class="stat-value highlight">$<?php echo number_format($total_net, 2); ?></div>
+                <div class="stat-value highlight"><span class="currency-amount" data-usd="<?php echo number_format($total_net, 2, '.', ''); ?>">$<?php echo number_format($total_net, 2); ?></span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Tax Withheld</div>
-                <div class="stat-value">$<?php echo number_format($total_tax, 2); ?></div>
+                <div class="stat-value"><span class="currency-amount" data-usd="<?php echo number_format($total_tax, 2, '.', ''); ?>">$<?php echo number_format($total_tax, 2); ?></span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Avg Net Income</div>
-                <div class="stat-value">$<?php echo number_format($avg_net, 2); ?></div>
+                <div class="stat-value"><span class="currency-amount" data-usd="<?php echo number_format($avg_net, 2, '.', ''); ?>">$<?php echo number_format($avg_net, 2); ?></span></div>
             </div>
         </div>
 
@@ -212,13 +221,13 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
                                 <td style="white-space:nowrap;">
                                     <?php echo date('M Y', strtotime($rec['month_year'])); ?>
                                 </td>
-                                <td class="mono">$<?php echo number_format($rec['gross_income'], 2); ?></td>
-                                <td class="mono">$<?php echo number_format($rec['sss_deduction'], 2); ?></td>
-                                <td class="mono">$<?php echo number_format($rec['philhealth_deduction'], 2); ?></td>
-                                <td class="mono">$<?php echo number_format($rec['pagibig_deduction'], 2); ?></td>
-                                <td class="mono">$<?php echo number_format($rec['taxable_income'], 2); ?></td>
-                                <td class="mono">$<?php echo number_format($rec['total_tax_withheld'], 2); ?></td>
-                                <td class="net-income">$<?php echo number_format($rec['net_income'], 2); ?></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['gross_income'], 2, '.', ''); ?>">$<?php echo number_format($rec['gross_income'], 2); ?></span></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['sss_deduction'], 2, '.', ''); ?>">$<?php echo number_format($rec['sss_deduction'], 2); ?></span></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['philhealth_deduction'], 2, '.', ''); ?>">$<?php echo number_format($rec['philhealth_deduction'], 2); ?></span></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['pagibig_deduction'], 2, '.', ''); ?>">$<?php echo number_format($rec['pagibig_deduction'], 2); ?></span></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['taxable_income'], 2, '.', ''); ?>">$<?php echo number_format($rec['taxable_income'], 2); ?></span></td>
+                                <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($rec['total_tax_withheld'], 2, '.', ''); ?>">$<?php echo number_format($rec['total_tax_withheld'], 2); ?></span></td>
+                                <td class="net-income"><span class="currency-amount" data-usd="<?php echo number_format($rec['net_income'], 2, '.', ''); ?>">$<?php echo number_format($rec['net_income'], 2); ?></span></td>
                                 <td>
                                     <?php
                                         $edit_month_param = date('Y-m', strtotime($rec['month_year']));
@@ -238,5 +247,6 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
             </div>
         </section>
     </main>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

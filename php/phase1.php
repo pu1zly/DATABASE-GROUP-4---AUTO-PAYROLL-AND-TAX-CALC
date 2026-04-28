@@ -198,9 +198,18 @@ function isStandardPosition($pos) {
     <?php include 'sidebar.php'; ?>
 
     <main class="content-area">
-        <header class="content-header">
-            <h1>Employee Directory</h1>
-            <p>Add, edit, manage, or bulk import employee profiles</p>
+        <header class="content-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; justify-content:space-between;">
+            <div>
+                <h1>Employee Directory</h1>
+                <p>Add, edit, manage, or bulk import employee profiles</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
+                <label for="currency-header-toggle" style="font-size:.75rem; font-weight:700; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;">Currency</label>
+                <select id="currency-header-toggle" data-currency-toggle style="border-radius:10px; border:1px solid var(--border); padding:10px 12px; background:#fff; color:#111; font-weight:600;">
+                    <option value="USD">USD</option>
+                    <option value="PHP">PHP</option>
+                </select>
+            </div>
         </header>
 
         <?php if ($message): ?>
@@ -292,7 +301,7 @@ function isStandardPosition($pos) {
                                     <td><code><?php echo htmlspecialchars($emp['employee_id_code']); ?></code></td>
                                     <td><strong><?php echo htmlspecialchars($emp['full_name']); ?></strong></td>
                                     <td><span class="badge"><?php echo htmlspecialchars($emp['position']); ?></span></td>
-                                    <td class="mono">$<?php echo number_format($emp['hourly_rate'], 2); ?></td>
+                                    <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($emp['hourly_rate'], 2, '.', ''); ?>">$<?php echo number_format($emp['hourly_rate'], 2); ?></span></td>
                                     <td class="mono"><?php echo $emp['tax_rate']; ?>%</td>
                                     <td>
                                         <div style="display: flex; gap: 8px;">
@@ -344,7 +353,7 @@ function isStandardPosition($pos) {
                                             <td><code><?php echo htmlspecialchars($emp['employee_id_code']); ?></code></td>
                                             <td><strong><?php echo htmlspecialchars($emp['full_name']); ?></strong></td>
                                             <td><span class="badge"><?php echo htmlspecialchars($emp['position']); ?></span></td>
-                                            <td class="mono">$<?php echo number_format($emp['hourly_rate'], 2); ?></td>
+                                            <td class="mono"><span class="currency-amount" data-usd="<?php echo number_format($emp['hourly_rate'], 2, '.', ''); ?>">$<?php echo number_format($emp['hourly_rate'], 2); ?></span></td>
                                             <td class="mono"><?php echo $emp['tax_rate']; ?>%</td>
                                             <td>
                                                 <div style="display: flex; gap: 8px;">
@@ -477,6 +486,6 @@ function isStandardPosition($pos) {
             setupSelectAll('select-all-inactive', 'inactive-check');
         });
     </script>
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

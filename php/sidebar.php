@@ -36,6 +36,18 @@ $current_user = getCurrentUser();
         </a>
     </nav>
 
+    <div class="sidebar-currency-switcher" style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 18px;">
+        <label style="display:block; font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,0.72); margin-bottom:8px;">Currency</label>
+        <div class="currency-switcher">
+            <span class="currency-label">USD</span>
+            <label class="switch">
+                <input type="checkbox" id="currency-toggle" data-currency-toggle>
+                <span class="slider"></span>
+            </label>
+            <span class="currency-label">PHP</span>
+        </div>
+    </div>
+
     <div class="sidebar-footer">
         <div class="user-info">
             <div class="user-avatar"><?php echo strtoupper(substr($current_user['username'], 0, 1)); ?></div>

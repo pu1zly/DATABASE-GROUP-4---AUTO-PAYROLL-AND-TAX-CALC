@@ -1,9 +1,78 @@
 /* script.js - Overhauled Payroll Logic (Phase 1-4) */
+const CURRENCY_CONVERSION_RATE = 56.00;
+const CURRENCY_MODE_KEY = 'currencyMode';
+const AVAILABLE_CURRENCIES = ['USD', 'PHP'];
+
+function getCurrencyMode() {
+    try {
+        const stored = localStorage.getItem(CURRENCY_MODE_KEY);
+        return AVAILABLE_CURRENCIES.includes(stored) ? stored : 'USD';
+    } catch (e) {
+        return 'USD';
+    }
+}
+
+function formatCurrency(value, currency) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return '';
+    const symbol = currency === 'PHP' ? '₱' : '$';
+    return symbol + amount.toFixed(2);
+}
+
+function updateCurrencyControls() {
+    const currency = getCurrencyMode();
+    document.querySelectorAll('[data-currency-toggle]').forEach(control => {
+        const tag = control.tagName.toLowerCase();
+        if (tag === 'select') {
+            control.value = currency;
+        } else if (control.type === 'checkbox') {
+            control.checked = currency === 'PHP';
+        }
+    });
+}
+
+function updateCurrencyDisplay() {
+    const currency = getCurrencyMode();
+    document.querySelectorAll('.currency-amount').forEach(el => {
+        const usdValue = Number(el.dataset.usd);
+        if (!Number.isFinite(usdValue)) return;
+        const converted = currency === 'PHP' ? usdValue * CURRENCY_CONVERSION_RATE : usdValue;
+        el.textContent = formatCurrency(converted, currency);
+    });
+    updateCurrencyControls();
+}
+
+function setCurrencyMode(currency) {
+    if (!AVAILABLE_CURRENCIES.includes(currency)) return;
+    try {
+        localStorage.setItem(CURRENCY_MODE_KEY, currency);
+    } catch (e) {
+        // localStorage may be unavailable; still update UI
+    }
+    updateCurrencyDisplay();
+}
+
+window.setCurrencyMode = setCurrencyMode;
+
 document.addEventListener('DOMContentLoaded', function() {
     const positionSelect = document.getElementById('position-select');
     const customTaxContainer = document.getElementById('custom-tax-container');
     const taxRateHidden = document.getElementById('tax_rate_hidden');
     const customTaxInput = document.querySelector('input[name="custom_tax_rate"]');
+    const currencyToggles = document.querySelectorAll('[data-currency-toggle]');
+
+    if (currencyToggles.length > 0) {
+        currencyToggles.forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const newCurrency = this.type === 'checkbox'
+                    ? (this.checked ? 'PHP' : 'USD')
+                    : this.value;
+                setCurrencyMode(newCurrency);
+            });
+        });
+    }
+
+    updateCurrencyDisplay();
 
     // Phase 1: Position-based Tax Logic
     if (positionSelect) {
@@ -43,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (timesheetForm) {
         timesheetForm.addEventListener('input', calculateTotalHours);
-        
+
         // Day Off Toggle Logic
         document.querySelectorAll('.day-off-check').forEach(check => {
             check.addEventListener('change', function() {
@@ -59,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 calculateTotalHours();
             });
         });
-        
+
         calculateTotalHours(); // Initial calculation
     }
 
@@ -69,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             let isValid = true;
             const numericInputs = form.querySelectorAll('input[type="number"]');
-            
+
             numericInputs.forEach(input => {
                 if (parseFloat(input.value) < 0) {
                     isValid = false;

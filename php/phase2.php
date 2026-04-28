@@ -254,11 +254,20 @@ $employees = getEmployees($pdo);
     <?php include 'sidebar.php'; ?>
 
     <main class="content-area">
-        <header class="content-header">
-            <h1><?php echo $is_edit_mode ? 'Edit Timesheet' : 'Timesheet'; ?></h1>
-            <p><?php echo $is_edit_mode
-                ? 'Editing record for <strong>' . htmlspecialchars($edit_employee['full_name']) . '</strong> — ' . date('F Y', strtotime($edit_month . '-01'))
-                : 'Log work hours and days off per employee'; ?></p>
+        <header class="content-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; justify-content:space-between;">
+            <div>
+                <h1><?php echo $is_edit_mode ? 'Edit Timesheet' : 'Timesheet'; ?></h1>
+                <p><?php echo $is_edit_mode
+                    ? 'Editing record for <strong>' . htmlspecialchars($edit_employee['full_name']) . '</strong> — ' . date('F Y', strtotime($edit_month . '-01'))
+                    : 'Log work hours and days off per employee'; ?></p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
+                <label for="currency-header-toggle" style="font-size:.75rem; font-weight:700; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;">Currency</label>
+                <select id="currency-header-toggle" data-currency-toggle style="border-radius:10px; border:1px solid var(--border); padding:10px 12px; background:#fff; color:#111; font-weight:600;">
+                    <option value="USD">USD</option>
+                    <option value="PHP">PHP</option>
+                </select>
+            </div>
         </header>
 
         <?php if ($is_edit_mode): ?>
@@ -371,7 +380,7 @@ $employees = getEmployees($pdo);
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
     <script>
     (function () {
         const isEditMode = <?php echo $is_edit_mode ? 'true' : 'false'; ?>;
