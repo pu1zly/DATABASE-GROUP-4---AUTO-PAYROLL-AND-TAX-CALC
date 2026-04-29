@@ -79,161 +79,232 @@ if (!$is_register_mode && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST[
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Libre+Franklin:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3B82F6;
-            --primary-dark: #2563EB;
-            --primary-light: #DBEAFE;
-            --success: #10B981;
-            --danger: #EF4444;
-            --warning: #F59E0B;
-            --text: #111827;
-            --text-muted: #6B7280;
-            --border: #E5E7EB;
-            --bg: #FFFFFF;
-            --bg-light: #F9FAFB;
+            --gunmetal:      #2e3532;
+            --gunmetal-deep: #1d2220;
+            --gunmetal-mid:  #3d4541;
+            --amaranth:      #8b2635;
+            --amber:         #e28413;
+            --amber-dark:    #c4720f;
+            --linen:         #e0e2db;
+            --dust:          #d2d4c8;
+            --text-dark:     #1a1f1d;
+            --text-muted:    #727a74;
+            --border:        #d2d4c8;
+            --surface:       #f7f7f4;
+            --font-display:  'Bebas Neue', 'Arial Narrow', sans-serif;
+            --font-body:     'Libre Franklin', 'Helvetica Neue', sans-serif;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        html, body {
-            height: 100%;
-        }
+        html, body { height: 100%; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            font-family: var(--font-body);
+            background: var(--gunmetal-deep);
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            min-height: 100vh;
+            position: relative;
         }
 
-        .auth-container {
-            background: var(--bg);
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        /* Subtle texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 40px,
+                rgba(255,255,255,.012) 40px,
+                rgba(255,255,255,.012) 80px
+            );
+            pointer-events: none;
+        }
+
+        .auth-wrapper {
+            display: flex;
             width: 100%;
-            max-width: 420px;
+            max-width: 860px;
+            min-height: 540px;
+            border-radius: 14px;
             overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0,0,0,.5);
+            position: relative;
+            z-index: 1;
         }
 
-        .auth-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            padding: 32px 24px;
-            text-align: center;
-            color: white;
+        /* Left panel — brand */
+        .auth-brand {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--gunmetal);
+            border-right: 2px solid var(--amaranth);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 36px 28px;
         }
 
-        .auth-header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
+        .auth-brand-top { }
+
+        .brand-eyebrow {
+            font-size: .58rem;
             font-weight: 700;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: #4f5c57;
+            margin-bottom: 6px;
         }
 
-        .auth-header p {
-            font-size: 14px;
-            opacity: 0.9;
+        .brand-name {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: #dde1df;
+            letter-spacing: .06em;
+            line-height: 1;
         }
 
+        .brand-tagline {
+            margin-top: 14px;
+            font-size: .8rem;
+            color: #5a6460;
+            line-height: 1.6;
+        }
+
+        .brand-accent {
+            width: 40px;
+            height: 3px;
+            background: var(--amber);
+            border-radius: 2px;
+            margin-top: 20px;
+        }
+
+        .brand-footer {
+            font-size: .72rem;
+            color: #3a4540;
+            letter-spacing: .04em;
+        }
+
+        /* Right panel — form */
         .auth-content {
-            padding: 32px 24px;
+            flex: 1;
+            background: var(--surface);
+            padding: 40px 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .auth-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            color: var(--text-dark);
+            letter-spacing: .05em;
+            margin-bottom: 4px;
+        }
+
+        .auth-subtitle {
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 28px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .form-group label {
             display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
+            font-size: .65rem;
+            font-weight: 700;
+            color: var(--gunmetal-mid);
+            margin-bottom: 7px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: .1em;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            font-size: .88rem;
             font-family: inherit;
-            transition: all 0.2s;
+            background: #fff;
+            color: var(--text-dark);
+            transition: border-color .2s, box-shadow .2s;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-light);
+            border-color: var(--amber);
+            box-shadow: 0 0 0 3px rgba(226,132,19,.15);
         }
 
-        .form-group input::placeholder {
-            color: var(--text-muted);
-        }
+        .form-group input::placeholder { color: #b0b6b2; }
 
         .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
+            padding: 11px 14px;
+            border-radius: 7px;
+            margin-bottom: 18px;
+            font-size: .83rem;
+            font-weight: 500;
         }
 
         .alert-error {
-            background: #FEE2E2;
-            border: 1px solid #FECACA;
-            color: #DC2626;
+            background: #fdf0f1;
+            border: 1px solid #e8bec3;
+            color: #7a1e2a;
         }
 
         .alert-success {
-            background: #DCFCE7;
-            border: 1px solid #BBF7D0;
-            color: #16A34A;
+            background: #eaf2e8;
+            border: 1px solid #b5d4b0;
+            color: #2e5229;
         }
 
         .btn {
             width: 100%;
             padding: 12px 16px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            border-radius: 7px;
+            font-size: .8rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background .2s, transform .15s, box-shadow .2s;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: .08em;
+            font-family: inherit;
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: white;
+            background: var(--amaranth);
+            color: #fff;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+            background: #7a1e2a;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(139,38,53,.3);
         }
 
-        .btn-primary:active {
-            transform: translateY(0);
-        }
+        .btn-primary:active { transform: translateY(0); }
 
         .divider {
             display: flex;
             align-items: center;
-            margin: 24px 0;
+            margin: 22px 0;
             gap: 12px;
         }
 
-        .divider::before,
-        .divider::after {
+        .divider::before, .divider::after {
             content: '';
             flex: 1;
             height: 1px;
@@ -241,74 +312,77 @@ if (!$is_register_mode && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST[
         }
 
         .divider span {
-            font-size: 13px;
+            font-size: .75rem;
             color: var(--text-muted);
             white-space: nowrap;
         }
 
         .auth-toggle {
             text-align: center;
-            font-size: 14px;
+            font-size: .83rem;
             color: var(--text-muted);
         }
 
         .auth-toggle a {
-            color: var(--primary);
+            color: var(--amaranth);
             text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
+            font-weight: 700;
+            transition: color .2s;
         }
 
-        .auth-toggle a:hover {
-            color: var(--primary-dark);
-        }
+        .auth-toggle a:hover { color: var(--amber); }
 
         .password-requirements {
-            background: var(--bg-light);
+            background: #f0f1ec;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px 14px;
-            font-size: 13px;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: .78rem;
             color: var(--text-muted);
             margin-top: 8px;
         }
 
         .password-requirements ul {
-            margin: 8px 0 0 20px;
+            margin: 6px 0 0 18px;
             padding: 0;
         }
 
-        .password-requirements li {
-            margin: 4px 0;
-        }
+        .password-requirements li { margin: 3px 0; }
 
-        @media (max-width: 480px) {
-            .auth-container {
-                max-width: 100%;
+        @media (max-width: 640px) {
+            .auth-wrapper { flex-direction: column; max-width: 440px; }
+            .auth-brand {
+                width: 100%;
+                flex-direction: row;
+                align-items: center;
+                padding: 20px 24px;
+                border-right: none;
+                border-bottom: 2px solid var(--amaranth);
             }
-
-            .auth-header {
-                padding: 24px 20px;
-            }
-
-            .auth-header h1 {
-                font-size: 24px;
-            }
-
-            .auth-content {
-                padding: 24px 20px;
-            }
+            .auth-brand-top { display: flex; align-items: center; gap: 16px; }
+            .brand-tagline, .brand-accent, .brand-footer { display: none; }
+            .brand-name { font-size: 2rem; }
+            .auth-content { padding: 28px 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1>NetGain</h1>
-            <p><?php echo $is_register_mode ? 'Create your account' : 'Welcome back'; ?></p>
+    <div class="auth-wrapper">
+        <!-- Brand Panel -->
+        <div class="auth-brand">
+            <div class="auth-brand-top">
+                <div class="brand-eyebrow">Payroll System</div>
+                <div class="brand-name">NetGain</div>
+                <div class="brand-accent"></div>
+                <p class="brand-tagline">Streamlined payroll management for modern teams.</p>
+            </div>
+            <div class="brand-footer">© <?php echo date('Y'); ?> NetGain</div>
         </div>
 
+        <!-- Form Panel -->
         <div class="auth-content">
+            <div class="auth-title"><?php echo $is_register_mode ? 'Create Account' : 'Welcome Back'; ?></div>
+            <div class="auth-subtitle"><?php echo $is_register_mode ? 'Fill in the details below to register.' : 'Sign in to access your dashboard.'; ?></div>
             <?php if (!empty($error_message)): ?>
                 <div class="alert alert-error">
                     <?php echo htmlspecialchars($error_message); ?>
@@ -441,7 +515,7 @@ if (!$is_register_mode && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST[
                 </div>
 
             <?php endif; ?>
-        </div>
-    </div>
+        </div><!-- /auth-content -->
+    </div><!-- /auth-wrapper -->
 </body>
 </html>
