@@ -29,20 +29,22 @@ $message_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'save_settings') {
+        // Only relevant fields are now theme, and other defaults are still saved but hidden
         $data = [
             'theme'              => in_array($_POST['theme'] ?? '', ['light','dark','system']) ? $_POST['theme'] : 'light',
-            'accent_color'       => preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['accent_color'] ?? '') ? $_POST['accent_color'] : '#e28413',
-            'density'            => in_array($_POST['density'] ?? '', ['compact','comfortable','spacious']) ? $_POST['density'] : 'comfortable',
-            'default_currency'   => in_array($_POST['default_currency'] ?? '', ['USD','PHP']) ? $_POST['default_currency'] : 'USD',
-            'exchange_rate'      => max(1, min(200, (float)($_POST['exchange_rate'] ?? 56))),
-            'default_pay_period' => in_array($_POST['default_pay_period'] ?? '', ['monthly','semi-monthly','bi-weekly']) ? $_POST['default_pay_period'] : 'monthly',
-            'notify_payroll_due'  => isset($_POST['notify_payroll_due'])  ? 1 : 0,
-            'notify_new_employee' => isset($_POST['notify_new_employee']) ? 1 : 0,
-            'notify_cap_warning'  => isset($_POST['notify_cap_warning'])  ? 1 : 0,
-            'notify_export'       => isset($_POST['notify_export'])       ? 1 : 0,
-            'high_contrast'  => isset($_POST['high_contrast'])  ? 1 : 0,
-            'reduce_motion'  => isset($_POST['reduce_motion'])  ? 1 : 0,
-            'large_text'     => isset($_POST['large_text'])     ? 1 : 0,
+            // these are no longer in the UI but keep defaults if not set
+            'accent_color'       => $settings['accent_color'],
+            'density'            => $settings['density'],
+            'default_currency'   => $settings['default_currency'],
+            'exchange_rate'      => $settings['exchange_rate'],
+            'default_pay_period' => $settings['default_pay_period'],
+            'notify_payroll_due'  => $settings['notify_payroll_due'],
+            'notify_new_employee' => $settings['notify_new_employee'],
+            'notify_cap_warning'  => $settings['notify_cap_warning'],
+            'notify_export'       => $settings['notify_export'],
+            'high_contrast'  => $settings['high_contrast'],
+            'reduce_motion'  => $settings['reduce_motion'],
+            'large_text'     => $settings['large_text'],
         ];
         if (saveUserSettings($pdo, $current_user['id'], $data)) {
             logAudit($pdo, 'settings', 'user', $current_user['id'], "Updated settings");
@@ -75,8 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     }
 }
-
-$accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -160,90 +160,6 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
             border-color: var(--amber);
             background: var(--amber-soft);
         }
-        /* Accent swatches */
-        .accent-swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
-        .accent-swatch {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: transform .15s, border-color .15s;
-            outline: none;
-        }
-        .accent-swatch:hover { transform: scale(1.15); }
-        .accent-swatch.sel  { border-color: var(--gunmetal); transform: scale(1.15); }
-        /* Density pills */
-        .density-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-        .density-pill {
-            flex: 1; min-width: 90px; max-width: 130px;
-            padding: 10px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-            cursor: pointer;
-            transition: all .15s;
-            font-size: .83rem;
-            font-weight: 600;
-            color: var(--text-mid);
-            background: transparent;
-        }
-        .density-pill .density-preview {
-            height: 28px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            margin-bottom: 6px;
-        }
-        .density-pill .density-preview span {
-            display: block;
-            width: 70%;
-            margin: 0 auto;
-            background: var(--dust);
-            border-radius: 2px;
-        }
-        .density-pill input[type=radio] { display: none; }
-        .density-pill:has(input:checked),
-        .density-pill.sel {
-            border-color: var(--amber);
-            background: var(--amber-soft);
-            color: var(--amber-dark);
-        }
-        /* Toggle rows */
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .toggle-row:last-child { border-bottom: none; }
-        .toggle-row .toggle-label { font-size: .9rem; font-weight: 500; color: var(--text-dark); }
-        .toggle-row .toggle-sub   { font-size: .77rem; color: var(--text-muted); margin-top: 2px; }
-        /* Toggle switch */
-        .ng-toggle {
-            position: relative;
-            width: 42px; height: 24px; flex-shrink: 0;
-        }
-        .ng-toggle input { opacity: 0; width: 0; height: 0; }
-        .ng-toggle .track {
-            position: absolute; inset: 0;
-            background: var(--dust-dark);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background .2s;
-        }
-        .ng-toggle input:checked + .track { background: var(--amber); }
-        .ng-toggle .track::after {
-            content: '';
-            position: absolute;
-            width: 18px; height: 18px;
-            background: white;
-            border-radius: 50%;
-            top: 3px; left: 3px;
-            transition: left .2s;
-        }
-        .ng-toggle input:checked + .track::after { left: 21px; }
         /* Shortcut list */
         .shortcut-row {
             display: flex;
@@ -284,17 +200,7 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
         .danger-confirm input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; cursor: pointer; accent-color: var(--amaranth); }
         .danger-confirm .dc-title { font-size: .875rem; font-weight: 600; color: var(--amaranth); }
         .danger-confirm .dc-sub   { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
-        /* Range slider with value */
-        .range-with-val { display: flex; align-items: center; gap: 12px; }
-        .range-with-val input[type=range] { flex: 1; }
-        .range-val {
-            font-family: var(--font-mono);
-            font-size: .88rem;
-            min-width: 52px;
-            text-align: right;
-            color: var(--text-dark);
-            font-weight: 600;
-        }
+
         @media (max-width: 900px) {
             .settings-grid { grid-template-columns: 1fr; margin: 0 16px 44px; }
             .settings-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
@@ -308,7 +214,7 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
     <main class="content-area">
         <header class="content-header">
             <h1>Settings</h1>
-            <p>Appearance, regional preferences, accessibility, and security</p>
+            <p>Appearance, shortcuts, security, and system options</p>
         </header>
 
         <?php if ($message): ?>
@@ -319,9 +225,6 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
             <!-- Left nav -->
             <nav class="settings-nav" id="settings-nav">
                 <a href="#appearance" class="active" data-panel="appearance">🎨 Appearance</a>
-                <a href="#regional"   data-panel="regional">🌍 Regional</a>
-                <a href="#notifications-prefs" data-panel="notifications-prefs">🔔 Notifications</a>
-                <a href="#accessibility" data-panel="accessibility">♿ Accessibility</a>
                 <a href="#shortcuts"  data-panel="shortcuts">⌨️ Shortcuts</a>
                 <a href="#security"   data-panel="security">🔑 Security</a>
                 <a href="#danger"     data-panel="danger">⚠️ Danger Zone</a>
@@ -332,7 +235,7 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
                 <form method="POST" id="settings-form">
                     <input type="hidden" name="action" value="save_settings">
 
-                    <!-- APPEARANCE -->
+                    <!-- APPEARANCE (Theme only) -->
                     <div class="setting-panel active" id="panel-appearance">
                         <div class="setting-section">
                             <h3>Theme</h3>
@@ -355,140 +258,8 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
                             </div>
                         </div>
 
-                        <div class="setting-section">
-                            <h3>Accent Color</h3>
-                            <p style="font-size:.83rem; color:var(--text-muted); margin-bottom:12px;">Used for active nav items, focus rings, and primary highlights.</p>
-                            <div class="accent-swatches">
-                                <?php foreach ($accents as $color): ?>
-                                <button type="button" class="accent-swatch <?php echo $settings['accent_color']===$color ? 'sel' : ''; ?>"
-                                    style="background:<?php echo $color; ?>;"
-                                    data-color="<?php echo $color; ?>"
-                                    title="<?php echo $color; ?>"
-                                    onclick="selectAccent(this)"></button>
-                                <?php endforeach; ?>
-                            </div>
-                            <input type="hidden" name="accent_color" id="accent-color-input" value="<?php echo htmlspecialchars($settings['accent_color']); ?>">
-                        </div>
-
-                        <div class="setting-section">
-                            <h3>Interface Density</h3>
-                            <p style="font-size:.83rem; color:var(--text-muted); margin-bottom:12px;">Controls padding and spacing throughout the app.</p>
-                            <div class="density-pills">
-                                <label class="density-pill <?php echo $settings['density']==='compact' ? 'sel' : ''; ?>">
-                                    <input type="radio" name="density" value="compact" <?php echo $settings['density']==='compact' ? 'checked' : ''; ?>>
-                                    <div class="density-preview">
-                                        <span style="height:3px;"></span><span style="height:3px;"></span><span style="height:3px;"></span>
-                                    </div>
-                                    Compact
-                                </label>
-                                <label class="density-pill <?php echo $settings['density']==='comfortable' ? 'sel' : ''; ?>">
-                                    <input type="radio" name="density" value="comfortable" <?php echo $settings['density']==='comfortable' ? 'checked' : ''; ?>>
-                                    <div class="density-preview">
-                                        <span style="height:4px;"></span><span style="height:4px;"></span>
-                                    </div>
-                                    Comfortable
-                                </label>
-                                <label class="density-pill <?php echo $settings['density']==='spacious' ? 'sel' : ''; ?>">
-                                    <input type="radio" name="density" value="spacious" <?php echo $settings['density']==='spacious' ? 'checked' : ''; ?>>
-                                    <div class="density-preview">
-                                        <span style="height:5px;"></span>
-                                    </div>
-                                    Spacious
-                                </label>
-                            </div>
-                        </div>
-
                         <div style="text-align:right;">
                             <button type="submit" class="btn-primary">Save Appearance</button>
-                        </div>
-                    </div>
-
-                    <!-- REGIONAL -->
-                    <div class="setting-panel" id="panel-regional">
-                        <div class="setting-section">
-                            <h3>Currency &amp; Payroll Defaults</h3>
-
-                            <div class="form-group">
-                                <label>Default Currency</label>
-                                <select name="default_currency">
-                                    <option value="USD" <?php echo $settings['default_currency']==='USD' ? 'selected' : ''; ?>>USD — US Dollar</option>
-                                    <option value="PHP" <?php echo $settings['default_currency']==='PHP' ? 'selected' : ''; ?>>PHP — Philippine Peso</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Exchange Rate (1 USD → PHP)</label>
-                                <div class="range-with-val">
-                                    <input type="range" name="exchange_rate" id="rate-slider"
-                                           min="40" max="70" step="0.5"
-                                           value="<?php echo $settings['exchange_rate']; ?>"
-                                           oninput="document.getElementById('rate-display').textContent=parseFloat(this.value).toFixed(2)">
-                                    <span class="range-val" id="rate-display"><?php echo number_format($settings['exchange_rate'], 2); ?></span>
-                                </div>
-                                <div style="font-size:.78rem; color:var(--text-muted); margin-top:6px;">
-                                    Used when switching the currency display throughout the app.
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Default Pay Period</label>
-                                <select name="default_pay_period">
-                                    <option value="monthly"      <?php echo $settings['default_pay_period']==='monthly' ? 'selected' : ''; ?>>Monthly</option>
-                                    <option value="semi-monthly" <?php echo $settings['default_pay_period']==='semi-monthly' ? 'selected' : ''; ?>>Semi-monthly (1st &amp; 15th)</option>
-                                    <option value="bi-weekly"    <?php echo $settings['default_pay_period']==='bi-weekly' ? 'selected' : ''; ?>>Bi-weekly</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <button type="submit" class="btn-primary">Save Regional</button>
-                        </div>
-                    </div>
-
-                    <!-- NOTIFICATIONS PREFS -->
-                    <div class="setting-panel" id="panel-notifications-prefs">
-                        <div class="setting-section">
-                            <h3>In-App Notification Triggers</h3>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">Payroll deadline reminders</div><div class="toggle-sub">Alert 3 days before end of month</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="notify_payroll_due" <?php echo $settings['notify_payroll_due'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">New employee added</div><div class="toggle-sub">When any admin adds or imports an employee</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="notify_new_employee" <?php echo $settings['notify_new_employee'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">Contribution cap warnings</div><div class="toggle-sub">When SSS or PhilHealth cap is reached</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="notify_cap_warning" <?php echo $settings['notify_cap_warning'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">Export / import events</div><div class="toggle-sub">When CSV files are exported or imported</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="notify_export" <?php echo $settings['notify_export'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <button type="submit" class="btn-primary">Save Preferences</button>
-                        </div>
-                    </div>
-
-                    <!-- ACCESSIBILITY -->
-                    <div class="setting-panel" id="panel-accessibility">
-                        <div class="setting-section">
-                            <h3>Visual &amp; Motion Preferences</h3>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">High contrast mode</div><div class="toggle-sub">Increases border and text contrast ratios</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="high_contrast" <?php echo $settings['high_contrast'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">Reduce motion</div><div class="toggle-sub">Disables transitions and animations</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="reduce_motion" <?php echo $settings['reduce_motion'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                            <div class="toggle-row">
-                                <div><div class="toggle-label">Large text (1.15×)</div><div class="toggle-sub">Scales base font size for better readability</div></div>
-                                <label class="ng-toggle"><input type="checkbox" name="large_text" <?php echo $settings['large_text'] ? 'checked' : ''; ?>><span class="track"></span></label>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <button type="submit" class="btn-primary">Save Accessibility</button>
                         </div>
                     </div>
 
@@ -618,27 +389,11 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
         if (link) link.click();
     }
 
-    // Accent swatch
-    function selectAccent(btn) {
-        document.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('sel'));
-        btn.classList.add('sel');
-        document.getElementById('accent-color-input').value = btn.dataset.color;
-    }
-
-    // Density pill visual feedback
-    document.querySelectorAll('input[name=density]').forEach(r => {
-        r.addEventListener('change', function() {
-            document.querySelectorAll('.density-pill').forEach(p => p.classList.remove('sel'));
-            this.closest('.density-pill').classList.add('sel');
-        });
-    });
-
     // Theme card visual feedback + live apply
     document.querySelectorAll('input[name=theme]').forEach(r => {
         r.addEventListener('change', function() {
             document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('sel'));
             this.closest('.theme-card').classList.add('sel');
-            // Apply immediately so the user sees the change before saving
             if (window.applyTheme) window.applyTheme(this.value);
         });
     });
@@ -677,15 +432,7 @@ $accents = ['#e28413','#4a6741','#8b2635','#2563eb','#7c3aed','#0891b2'];
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = '<input type="hidden" name="action" value="save_settings">' +
-                    '<input type="hidden" name="theme" value="light">' +
-                    '<input type="hidden" name="accent_color" value="#e28413">' +
-                    '<input type="hidden" name="density" value="comfortable">' +
-                    '<input type="hidden" name="default_currency" value="USD">' +
-                    '<input type="hidden" name="exchange_rate" value="56">' +
-                    '<input type="hidden" name="default_pay_period" value="monthly">' +
-                    '<input type="hidden" name="notify_payroll_due" value="1">' +
-                    '<input type="hidden" name="notify_new_employee" value="1">' +
-                    '<input type="hidden" name="notify_cap_warning" value="1">';
+                    '<input type="hidden" name="theme" value="light">';
                 document.body.appendChild(form);
                 form.submit();
             }

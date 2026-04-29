@@ -33,6 +33,27 @@ foreach ($payroll_display as $rec) {
     $total_tax   += $rec['total_tax_withheld'];
 }
 $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 0;
+
+// Chart data — per-employee names + values for the bar chart
+$chart_labels  = [];
+$chart_gross   = [];
+$chart_net     = [];
+$chart_tax     = [];
+$total_sss      = 0;
+$total_ph       = 0;
+$total_pagibig  = 0;
+foreach ($payroll_display as $rec) {
+    // Shorten name to first name + last initial for chart readability
+    $parts = explode(' ', $rec['full_name']);
+    $short = $parts[0] . (count($parts) > 1 ? ' ' . strtoupper(substr(end($parts), 0, 1)) . '.' : '');
+    $chart_labels[] = $short;
+    $chart_gross[]  = round((float)$rec['gross_income'], 2);
+    $chart_net[]    = round((float)$rec['net_income'], 2);
+    $chart_tax[]    = round((float)$rec['total_tax_withheld'], 2);
+    $total_sss     += (float)$rec['sss_deduction'];
+    $total_ph      += (float)$rec['philhealth_deduction'];
+    $total_pagibig += (float)$rec['pagibig_deduction'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -44,6 +65,43 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        /* ── Charts ──────────────────────────────────────────── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 260px 260px 1fr;
+            gap: 20px;
+            margin: 0 44px 24px;
+            align-items: start;
+        }
+        .chart-card {
+            background: var(--surface, #f7f7f4);
+            border: 1px solid var(--border, #d2d4c8);
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(26,31,29,.07);
+        }
+        .chart-title {
+            font-size: .65rem;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text-muted, #727a74);
+            margin-bottom: 14px;
+        }
+        .chart-canvas-wrap {
+            position: relative;
+        }
+        @media (max-width: 1100px) {
+            .charts-grid { grid-template-columns: 1fr 1fr; }
+            .chart-card.chart-bar { grid-column: 1 / -1; }
+        }
+        @media (max-width: 700px) {
+            .charts-grid { grid-template-columns: 1fr; margin: 0 16px 20px; }
+            .chart-card.chart-bar { grid-column: 1; }
+        }
+    </style>
     <style>
         .stats-grid {
             display: grid;
@@ -74,7 +132,7 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
             color: var(--text);
         }
         .stat-value.highlight {
-            color: #10b981;
+            color: var(--amber);
         }
         .stat-sub {
             font-size: 0.8rem;
@@ -85,7 +143,7 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #10b981;
+            background: var(--amaranth);
             color: white;
             border: none;
             padding: 8px 16px;
@@ -145,6 +203,45 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
                 <div class="stat-value"><span class="currency-amount" data-usd="<?php echo number_format($avg_net, 2, '.', ''); ?>">$<?php echo number_format($avg_net, 2); ?></span></div>
             </div>
         </div>
+
+        <!-- Charts Row -->
+        <?php if ($active_count + $inactive_count > 0): ?>
+        <div class="charts-grid">
+
+            <!-- Donut: Headcount -->
+            <div class="chart-card">
+                <div class="chart-title">Headcount</div>
+                <div class="chart-canvas-wrap" style="height:190px;">
+                    <canvas id="chart-headcount"></canvas>
+                </div>
+            </div>
+
+            <!-- Donut: Payroll Composition -->
+            <div class="chart-card">
+                <div class="chart-title">Payroll Breakdown</div>
+                <div class="chart-canvas-wrap" style="height:190px;">
+                    <?php if (!empty($payroll_display)): ?>
+                        <canvas id="chart-composition"></canvas>
+                    <?php else: ?>
+                        <div style="display:flex;align-items:center;justify-content:center;height:190px;color:var(--text-muted);font-size:.8rem;">No payroll this month</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Bar: Per-employee Net vs Gross -->
+            <div class="chart-card chart-bar">
+                <div class="chart-title">Gross vs Net — <?php echo date('F Y', strtotime($selected_month . '-01')); ?></div>
+                <div class="chart-canvas-wrap" style="height:190px;">
+                    <?php if (!empty($payroll_display)): ?>
+                        <canvas id="chart-employees"></canvas>
+                    <?php else: ?>
+                        <div style="display:flex;align-items:center;justify-content:center;height:190px;color:var(--text-muted);font-size:.8rem;">No payroll records for this month</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+        </div>
+        <?php endif; ?>
 
         <!-- Month Filter -->
         <section class="card" style="padding: 18px 24px; margin-bottom: 20px;">
@@ -248,5 +345,168 @@ $avg_net = count($payroll_display) > 0 ? $total_net / count($payroll_display) : 
         </section>
     </main>
     <script src="script.js?v=2"></script>
+    <script>
+    // ── Shared palette ───────────────────────────────────────
+    const AMBER   = '#e28413';
+    const SUCCESS = '#4a6741';
+    const DANGER  = '#8b2635';
+    const BLUE    = '#2563eb';
+    const MUTED   = '#d2d4c8';
+
+    Chart.defaults.font.family = "'DM Sans', 'Libre Franklin', sans-serif";
+    Chart.defaults.font.size   = 11;
+    Chart.defaults.color       = '#727a74';
+
+    // ── 1. Headcount donut ───────────────────────────────────
+    (function() {
+        const ctx = document.getElementById('chart-headcount');
+        if (!ctx) return;
+        const active   = <?php echo (int)$active_count; ?>;
+        const inactive = <?php echo (int)$inactive_count; ?>;
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Inactive'],
+                datasets: [{
+                    data: [active, inactive],
+                    backgroundColor: [SUCCESS, MUTED],
+                    borderColor: ['#fff', '#fff'],
+                    borderWidth: 3,
+                    hoverOffset: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 14, boxWidth: 11, boxHeight: 11, borderRadius: 3, useBorderRadius: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ${ctx.parsed}`
+                        }
+                    }
+                }
+            }
+        });
+    })();
+
+    // ── 2. Payroll composition donut ─────────────────────────
+    (function() {
+        const ctx = document.getElementById('chart-composition');
+        if (!ctx) return;
+        const net    = <?php echo round($total_net,    2); ?>;
+        const tax    = <?php echo round($total_tax,    2); ?>;
+        const sss    = <?php echo round($total_sss,    2); ?>;
+        const ph     = <?php echo round($total_ph,     2); ?>;
+        const pagibig= <?php echo round($total_pagibig,2); ?>;
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Net Pay', 'Income Tax', 'SSS', 'PhilHealth', 'Pag-IBIG'],
+                datasets: [{
+                    data: [net, tax, sss, ph, pagibig],
+                    backgroundColor: [SUCCESS, DANGER, AMBER, BLUE, '#7c3aed'],
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 10, boxWidth: 10, boxHeight: 10, borderRadius: 3, useBorderRadius: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                                const pct   = total > 0 ? ((ctx.parsed/total)*100).toFixed(1) : 0;
+                                return ` ${ctx.label}: $${ctx.parsed.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    })();
+
+    // ── 3. Per-employee grouped bar ──────────────────────────
+    (function() {
+        const ctx = document.getElementById('chart-employees');
+        if (!ctx) return;
+        const labels = <?php echo json_encode($chart_labels); ?>;
+        const gross  = <?php echo json_encode($chart_gross);  ?>;
+        const net    = <?php echo json_encode($chart_net);    ?>;
+        const tax    = <?php echo json_encode($chart_tax);    ?>;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Gross',
+                        data: gross,
+                        backgroundColor: 'rgba(226,132,19,.75)',
+                        borderColor: AMBER,
+                        borderWidth: 1.5,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Net Pay',
+                        data: net,
+                        backgroundColor: 'rgba(74,103,65,.75)',
+                        borderColor: SUCCESS,
+                        borderWidth: 1.5,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Tax',
+                        data: tax,
+                        backgroundColor: 'rgba(139,38,53,.65)',
+                        borderColor: DANGER,
+                        borderWidth: 1.5,
+                        borderRadius: 4,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxRotation: 35, minRotation: 0 }
+                    },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,.05)' },
+                        ticks: {
+                            callback: v => '$' + Number(v).toLocaleString()
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 14, boxWidth: 11, boxHeight: 11, borderRadius: 3, useBorderRadius: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+                        }
+                    }
+                }
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

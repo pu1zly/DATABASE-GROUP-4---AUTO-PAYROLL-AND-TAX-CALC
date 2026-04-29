@@ -162,6 +162,52 @@ function isStandardPosition($pos) {
     <style>
         .btn-reactivate { border-color: #f59e0b; color: #f59e0b; }
         .btn-reactivate:hover { background: #fffbeb; border-color: #d97706; }
+        .dir-col {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            grid-template-rows: auto auto;
+            gap: 24px;
+            align-items: start;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 44px 60px;
+        }
+        .dir-col .card { margin: 0; }
+
+        /* Add Employee form — left column, sticky */
+        .dir-col .card:first-child {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            position: sticky;
+            top: 20px;
+        }
+        /* Active Employees — top of right column */
+        .dir-col .card:nth-child(2) {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        /* Bulk Import — bottom of right column */
+        .dir-col .card:nth-child(3) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        @media (max-width: 1024px) {
+            .dir-col {
+                grid-template-columns: 1fr;
+                padding: 0 24px 44px;
+            }
+            .dir-col .card:first-child,
+            .dir-col .card:nth-child(2),
+            .dir-col .card:nth-child(3) {
+                grid-column: 1;
+                grid-row: auto;
+                position: static;
+            }
+        }
+        @media (max-width: 768px) {
+            .dir-col { padding: 0 16px 32px; }
+        }
         .bulk-bar {
             display: flex;
             align-items: center;
@@ -213,11 +259,11 @@ function isStandardPosition($pos) {
         </header>
 
         <?php if ($message): ?>
-            <div class="alert <?php echo $message_type; ?>"><?php echo $message; ?></div>
+            <div class="alert <?php echo $message_type; ?>" style="margin: 0 44px 16px;"><?php echo $message; ?></div>
         <?php endif; ?>
 
-        <div class="split-view">
-            <!-- Add / Edit Employee Form -->
+        <!-- Directory Sections: single centered column -->
+        <div class="dir-col">
             <section class="card">
                 <h2><?php echo $editing_employee ? "Edit Employee" : "Add New Employee"; ?></h2>
                 <form method="POST" id="config-form" novalidate>
@@ -370,27 +416,27 @@ function isStandardPosition($pos) {
                     </div>
                 <?php endif; ?>
             </section>
-        </div>
 
-        <!-- Bulk Import Card -->
-        <section class="card" style="margin-top: 24px;">
-            <h2>Bulk Import Employees (CSV)</h2>
-            <p style="color: var(--text-muted); font-size: .9rem; margin-bottom: 16px;">
-                Upload a CSV file with columns: <code>employee_id_code, full_name, position, hourly_rate, tax_rate</code>.
-                First row must contain the header. Position can be any job title.
-            </p>
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="bulk_import">
-                <div class="form-group">
-                    <label>Select CSV file</label>
-                    <input type="file" name="csv_file" accept=".csv" required>
+            <!-- Bulk Import Card -->
+            <section class="card">
+                <h2>Bulk Import Employees (CSV)</h2>
+                <p style="color: var(--text-muted); font-size: .9rem; margin-bottom: 16px;">
+                    Upload a CSV file with columns: <code>employee_id_code, full_name, position, hourly_rate, tax_rate</code>.
+                    First row must contain the header. Position can be any job title.
+                </p>
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="bulk_import">
+                    <div class="form-group">
+                        <label>Select CSV file</label>
+                        <input type="file" name="csv_file" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: auto; min-width: 200px;">Upload & Import</button>
+                </form>
+                <div style="margin-top: 12px; font-size: .85rem; color: var(--text-muted);">
+                    Example row: <code>EMP-101,John Doe,Software Engineer,25.00,20</code>
                 </div>
-                <button type="submit" class="btn-primary" style="width: auto; min-width: 200px;">Upload & Import</button>
-            </form>
-            <div style="margin-top: 12px; font-size: .85rem; color: var(--text-muted);">
-                Example row: <code>EMP-101,John Doe,Software Engineer,25.00,20</code>
-            </div>
-        </section>
+            </section>
+        </div><!-- /dir-col -->
     </main>
 
     <script>
