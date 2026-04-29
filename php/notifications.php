@@ -222,9 +222,9 @@ $unread_total   = countUnreadNotifications($pdo, $current_user['id']);
 
                     <div class="filter-tabs" id="filter-tabs">
                         <button class="filter-tab active" data-filter="all">All</button>
+                        <button class="filter-tab" data-filter="read">Read</button>
                         <button class="filter-tab" data-filter="unread">Unread</button>
                         <button class="filter-tab" data-filter="success">Success</button>
-                        <button class="filter-tab" data-filter="info">Info</button>
                         <button class="filter-tab" data-filter="warning">Warning</button>
                         <button class="filter-tab" data-filter="error">Error</button>
                     </div>
@@ -347,7 +347,10 @@ $unread_total   = countUnreadNotifications($pdo, $current_user['id']);
                     item.style.display = '';
                 } else if (filter === 'unread') {
                     item.style.display = item.dataset.read === '0' ? '' : 'none';
+                } else if (filter === 'read') {
+                    item.style.display = item.dataset.read === '1' ? '' : 'none';
                 } else {
+                    // filter by type (success, warning, error)
                     item.style.display = item.dataset.type === filter ? '' : 'none';
                 }
             });

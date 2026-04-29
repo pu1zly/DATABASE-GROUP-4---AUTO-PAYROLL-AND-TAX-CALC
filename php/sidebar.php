@@ -13,6 +13,56 @@ $unread_count = countUnreadNotifications($pdo, $current_user['id']);
 ?>
 <!-- Apply stored theme immediately to prevent flash of unstyled content -->
 <script>(function(){try{var t=localStorage.getItem('ngTheme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}}());</script>
+
+<?php
+// Fetch user preferences from DB
+$prefs = getUserSettings($pdo, $current_user['id']);
+// Accessibility booleans
+$highContrast = !empty($prefs['high_contrast']);
+$reduceMotion = !empty($prefs['reduce_motion']);
+$largeText    = !empty($prefs['large_text']);
+// Theme (fallback to light if system is stored but now disabled)
+$theme = in_array($prefs['theme'] ?? '', ['light','dark']) ? $prefs['theme'] : 'light';
+// Accent color
+$accent = preg_match('/^#[0-9a-fA-F]{6}$/', $prefs['accent_color'] ?? '') ? $prefs['accent_color'] : '#e28413';
+// Density
+$density = in_array($prefs['density'] ?? '', ['compact','comfortable','spacious']) ? $prefs['density'] : 'comfortable';
+?>
+<script>
+  // Override theme from DB (ensures stored theme is used)
+  document.documentElement.setAttribute('data-theme', '<?php echo $theme; ?>');
+  // Accessibility attributes
+  document.documentElement.setAttribute('data-high-contrast', '<?php echo $highContrast ? 'true' : 'false'; ?>');
+  document.documentElement.setAttribute('data-reduce-motion', '<?php echo $reduceMotion ? 'true' : 'false'; ?>');
+  document.documentElement.setAttribute('data-large-text',    '<?php echo $largeText    ? 'true' : 'false'; ?>');
+  // Density
+  document.documentElement.setAttribute('data-density', '<?php echo $density; ?>');
+</script>
+<style>
+  /* Apply accent color dynamically as custom properties */
+  :root {
+    --accent: <?php echo $accent; ?>;
+    --accent-soft: <?php echo $accent; ?>1a;   /* ~10% opacity */
+    --accent-dark: <?php
+        // Darken the accent by 15% for hover states
+        $hex = ltrim($accent, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $r = max(0, $r - 40);
+        $g = max(0, $g - 40);
+        $b = max(0, $b - 40);
+        echo sprintf('#%02x%02x%02x', $r, $g, $b);
+    ?>;
+  }
+  /* Override the amber-based tokens with the chosen accent */
+  :root, html[data-theme] {
+    --amber: var(--accent);
+    --amber-dark: var(--accent-dark);
+    --amber-soft: var(--accent-soft);
+  }
+</style>
+
 <aside class="main-sidebar" id="main-sidebar">
     <div class="sidebar-brand">
         <div class="brand-label">Payroll System</div>
@@ -43,10 +93,6 @@ $unread_count = countUnreadNotifications($pdo, $current_user['id']);
             <?php if ($unread_count > 0): ?>
                 <span class="notif-badge"><?php echo $unread_count > 9 ? '9+' : $unread_count; ?></span>
             <?php endif; ?>
-        </a>
-        <a href="audit_log.php" class="<?php echo $current_page == 'audit_log.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">🗂</span>
-            <span>Audit Log</span>
         </a>
         <a href="settings.php" class="<?php echo $current_page == 'settings.php' ? 'active' : ''; ?>">
             <span class="nav-icon">⚙️</span>
@@ -80,6 +126,9 @@ $unread_count = countUnreadNotifications($pdo, $current_user['id']);
         </a>
     </div>
 </aside>
+
+<!-- Command Palette overlay (unchanged) -->
+<!-- ... -->
 
 <!-- Command Palette overlay (Ctrl+K) -->
 <div id="cmd-overlay" class="cmd-overlay" role="dialog" aria-modal="true" aria-label="Command palette">
