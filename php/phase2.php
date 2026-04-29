@@ -1,6 +1,18 @@
 <?php
 // phase2.php - 30-Day Timesheet (new + edit mode)
+session_start();
 require_once 'db.php';
+
+function getDaysInMonth(string $monthYear): int {
+    $timestamp = strtotime($monthYear . '-01');
+    return $timestamp ? (int)date('t', $timestamp) : 30;
+}
+
+// Check if user is logged in
+if (!isUserLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
 
 // ── AJAX: return employee IDs that already have a record for a given month
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'taken_employees' && isset($_GET['month'])) {
@@ -21,6 +33,10 @@ $edit_employee_id = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : nu
 $edit_month       = isset($_GET['month']) ? $_GET['month'] : null; // YYYY-MM
 $is_edit_mode     = $edit_employee_id && $edit_month;
 
+$selected_month = $is_edit_mode ? $edit_month : date('Y-m');
+$selected_month = $selected_month ?: date('Y-m');
+$days_in_month  = getDaysInMonth($selected_month);
+
 // Pre-load existing daily logs if editing
 $existing_logs = [];
 $edit_employee = null;
@@ -38,8 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['process_payroll'])) {
     $is_editing  = isset($_POST['is_editing']) && $_POST['is_editing'] === '1';
 
     $total_reg = 0; $total_ot = 0;
+    $num_days = getDaysInMonth($month_year);
 
-    for ($i = 1; $i <= 30; $i++) {
+    for ($i = 1; $i <= $num_days; $i++) {
         $date       = $month_year . "-" . sprintf("%02d", $i);
         $is_day_off = isset($_POST["day_off_$i"]) ? 1 : 0;
         $reg        = $is_day_off ? 0 : (float)$_POST["reg_$i"];
@@ -237,11 +254,20 @@ $employees = getEmployees($pdo);
     <?php include 'sidebar.php'; ?>
 
     <main class="content-area">
-        <header class="content-header">
-            <h1><?php echo $is_edit_mode ? 'Edit Timesheet' : 'Timesheet'; ?></h1>
-            <p><?php echo $is_edit_mode
-                ? 'Editing record for <strong>' . htmlspecialchars($edit_employee['full_name']) . '</strong> — ' . date('F Y', strtotime($edit_month . '-01'))
-                : 'Log 30-day work hours and days off per employee'; ?></p>
+        <header class="content-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; justify-content:space-between;">
+            <div>
+                <h1><?php echo $is_edit_mode ? 'Edit Timesheet' : 'Timesheet'; ?></h1>
+                <p><?php echo $is_edit_mode
+                    ? 'Editing record for <strong>' . htmlspecialchars($edit_employee['full_name']) . '</strong> — ' . date('F Y', strtotime($edit_month . '-01'))
+                    : 'Log work hours and days off per employee'; ?></p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; min-width:180px;">
+                <label for="currency-header-toggle" style="font-size:.75rem; font-weight:700; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;">Currency</label>
+                <select id="currency-header-toggle" data-currency-toggle style="border-radius:10px; border:1px solid var(--border); padding:10px 12px; background:#fff; color:#111; font-weight:600;">
+                    <option value="USD">USD</option>
+                    <option value="PHP">PHP</option>
+                </select>
+            </div>
         </header>
 
         <?php if ($is_edit_mode): ?>
@@ -290,7 +316,7 @@ $employees = getEmployees($pdo);
 
                     <button type="submit" name="process_payroll" class="btn-primary"
                             style="width:auto; min-width:160px; white-space:nowrap;">
-                        <?php echo $is_edit_mode ? 'Save Changes →' : 'Process 30 Days →'; ?>
+                        <?php echo $is_edit_mode ? 'Save Changes →' : 'Process Month →'; ?>
                     </button>
                 </div>
 
@@ -305,41 +331,45 @@ $employees = getEmployees($pdo);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php for ($i = 1; $i <= 30; $i++):
+                        <?php for ($i = 1; $i <= 31; $i++):
                             $log        = $existing_logs[$i] ?? null;
                             $reg_val    = $log ? (float)$log['reg_hours'] : 8;
                             $ot_val     = $log ? (float)$log['ot_hours']  : 0;
                             $is_day_off = $log ? (bool)$log['is_day_off'] : false;
+                            $is_visible = $i <= $days_in_month;
                         ?>
-                        <tr class="day-row <?php echo $is_day_off ? 'row-dayoff' : ''; ?>" id="row-<?php echo $i; ?>">
+                        <tr class="day-row <?php echo $is_day_off ? 'row-dayoff' : ''; ?>" id="row-<?php echo $i; ?>" data-day="<?php echo $i; ?>" <?php echo $is_visible ? '' : 'style="display:none;"'; ?>>
                             <td class="row-num">Day <?php echo sprintf('%02d', $i); ?></td>
                             <td>
                                 <input type="number" step="0.1" min="0"
                                        name="reg_<?php echo $i; ?>"
                                        value="<?php echo $is_day_off ? 0 : $reg_val; ?>"
-                                       class="ts-input">
+                                       class="ts-input"
+                                       <?php echo $is_visible ? '' : 'disabled'; ?>>
                             </td>
                             <td>
                                 <input type="number" step="0.1" min="0"
                                        name="ot_<?php echo $i; ?>"
                                        value="<?php echo $is_day_off ? 0 : $ot_val; ?>"
-                                       class="ts-input">
+                                       class="ts-input"
+                                       <?php echo $is_visible ? '' : 'disabled'; ?>>
                             </td>
                             <td class="check-cell">
                                 <input type="checkbox"
                                        name="day_off_<?php echo $i; ?>"
                                        class="day-off-check"
                                        data-day="<?php echo $i; ?>"
-                                       <?php echo $is_day_off ? 'checked' : ''; ?>>
+                                       <?php echo $is_day_off ? 'checked' : ''; ?>
+                                       <?php echo $is_visible ? '' : 'disabled'; ?>>
                             </td>
-                            <input type="hidden" name="sick_<?php echo $i; ?>" value="0">
-                            <input type="hidden" name="vac_<?php echo $i; ?>"  value="0">
+                            <input type="hidden" name="sick_<?php echo $i; ?>" value="0" <?php echo $is_visible ? '' : 'disabled'; ?>>
+                            <input type="hidden" name="vac_<?php echo $i; ?>"  value="0" <?php echo $is_visible ? '' : 'disabled'; ?>>
                         </tr>
                         <?php endfor; ?>
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td>30-Day Total</td>
+                            <td>Month Total</td>
                             <td class="tfoot-val" id="foot-reg">0.0 hrs</td>
                             <td class="tfoot-val" id="foot-ot">0.0 hrs</td>
                             <td class="tfoot-val" id="foot-off">0 days</td>
@@ -350,7 +380,7 @@ $employees = getEmployees($pdo);
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
     <script>
     (function () {
         const isEditMode = <?php echo $is_edit_mode ? 'true' : 'false'; ?>;
@@ -400,9 +430,41 @@ $employees = getEmployees($pdo);
         }
 
         if (!isEditMode) {
-            monthPicker.addEventListener('change', refreshTakenEmployees);
+            monthPicker.addEventListener('change', function () {
+                refreshTakenEmployees();
+                updateMonthDays();
+            });
             refreshTakenEmployees(); // run on page load
         }
+
+        function getDaysInMonthFromValue(value) {
+            if (!value) return 30;
+            const parts = value.split('-').map(Number);
+            if (parts.length !== 2 || !parts[0] || !parts[1]) return 30;
+            return new Date(parts[0], parts[1], 0).getDate();
+        }
+
+        function updateMonthDays() {
+            const visibleDays = getDaysInMonthFromValue(monthPicker.value);
+            document.querySelectorAll('.day-row').forEach(row => {
+                const day = parseInt(row.getAttribute('data-day'), 10);
+                const rowInputs = row.querySelectorAll('input');
+                if (day <= visibleDays) {
+                    row.style.display = '';
+                    rowInputs.forEach(input => input.disabled = false);
+                } else {
+                    row.style.display = 'none';
+                    rowInputs.forEach(input => {
+                        input.disabled = true;
+                        if (input.type === 'number') input.value = 0;
+                        if (input.type === 'checkbox') input.checked = false;
+                    });
+                }
+            });
+            updateFooter();
+        }
+
+        updateMonthDays();
 
         // ── Totals footer
         function updateFooter() {

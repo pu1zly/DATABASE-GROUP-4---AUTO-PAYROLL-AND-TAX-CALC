@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS employees (
     position            ENUM('Intern', 'Contractor', 'Regular Staff', 'Manager', 'Custom') NOT NULL,
     hourly_rate         DECIMAL(10, 2) NOT NULL,
     tax_rate            DECIMAL(5, 2) NOT NULL,        -- Percentage (0, 10, 20, 30, or Custom)
+    is_active           BOOLEAN DEFAULT TRUE,          -- Soft-delete support (FALSE = deactivated)
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -70,6 +71,22 @@ CREATE TABLE IF NOT EXISTS payroll_records (
     net_income              DECIMAL(10, 2) NOT NULL,   -- Final Take-Home Pay
     processed_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE 5: users
+-- User authentication and access control
+-- ============================================================
+CREATE TABLE IF NOT EXISTS users (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    username            VARCHAR(50) UNIQUE NOT NULL,
+    email               VARCHAR(100) UNIQUE NOT NULL,
+    password_hash       VARCHAR(255) NOT NULL,
+    full_name           VARCHAR(100),
+    role                ENUM('admin', 'manager', 'staff') DEFAULT 'staff',
+    is_active           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login          TIMESTAMP NULL
 ) ENGINE=InnoDB;
 
 
@@ -200,3 +217,5 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+ALTER TABLE employees MODIFY COLUMN position VARCHAR(100) NOT NULL;
