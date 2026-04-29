@@ -162,6 +162,15 @@ function isStandardPosition($pos) {
     <style>
         .btn-reactivate { border-color: #f59e0b; color: #f59e0b; }
         .btn-reactivate:hover { background: #fffbeb; border-color: #d97706; }
+        .dir-col {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 44px 60px;
+        }
+        .dir-col .card { margin: 0; }
         .bulk-bar {
             display: flex;
             align-items: center;
@@ -216,8 +225,8 @@ function isStandardPosition($pos) {
             <div class="alert <?php echo $message_type; ?>"><?php echo $message; ?></div>
         <?php endif; ?>
 
-        <div class="split-view">
-            <!-- Add / Edit Employee Form -->
+        <!-- Directory Sections: single centered column -->
+        <div class="dir-col">
             <section class="card">
                 <h2><?php echo $editing_employee ? "Edit Employee" : "Add New Employee"; ?></h2>
                 <form method="POST" id="config-form" novalidate>
@@ -370,27 +379,27 @@ function isStandardPosition($pos) {
                     </div>
                 <?php endif; ?>
             </section>
-        </div>
 
-        <!-- Bulk Import Card -->
-        <section class="card" style="margin-top: 24px;">
-            <h2>Bulk Import Employees (CSV)</h2>
-            <p style="color: var(--text-muted); font-size: .9rem; margin-bottom: 16px;">
-                Upload a CSV file with columns: <code>employee_id_code, full_name, position, hourly_rate, tax_rate</code>.
-                First row must contain the header. Position can be any job title.
-            </p>
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="bulk_import">
-                <div class="form-group">
-                    <label>Select CSV file</label>
-                    <input type="file" name="csv_file" accept=".csv" required>
+            <!-- Bulk Import Card -->
+            <section class="card">
+                <h2>Bulk Import Employees (CSV)</h2>
+                <p style="color: var(--text-muted); font-size: .9rem; margin-bottom: 16px;">
+                    Upload a CSV file with columns: <code>employee_id_code, full_name, position, hourly_rate, tax_rate</code>.
+                    First row must contain the header. Position can be any job title.
+                </p>
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="bulk_import">
+                    <div class="form-group">
+                        <label>Select CSV file</label>
+                        <input type="file" name="csv_file" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: auto; min-width: 200px;">Upload & Import</button>
+                </form>
+                <div style="margin-top: 12px; font-size: .85rem; color: var(--text-muted);">
+                    Example row: <code>EMP-101,John Doe,Software Engineer,25.00,20</code>
                 </div>
-                <button type="submit" class="btn-primary" style="width: auto; min-width: 200px;">Upload & Import</button>
-            </form>
-            <div style="margin-top: 12px; font-size: .85rem; color: var(--text-muted);">
-                Example row: <code>EMP-101,John Doe,Software Engineer,25.00,20</code>
-            </div>
-        </section>
+            </section>
+        </div><!-- /dir-col -->
     </main>
 
     <script>
